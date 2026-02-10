@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Configuration - Admin Panel{% endblock %}
+{% block page_title %}Edit: {{ friendly_name }}{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <a href="{% url 'admin_configurations' %}" class="btn-back">← Back a Configurations</a>
+    </div>
+    
+    <div class="admin-form-container">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="key">Configuration</label>
+                <input type="text" id="key" value="{{ friendly_name }}" disabled>
+                <small class="form-help">Clave técnica: {{ config.key }}</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="value">Valor *</label>
+                {% if is_interval %}
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="number" id="value" name="value" value="{{ display_value }}" required min="1">
+                    <span style="color: #b0b0b0;">minutes</span>
+                </div>
+                <small class="form-help">Value will be stored in seconds internally</small>
+                {% else %}
+                <input type="text" id="value" name="value" value="{{ display_value }}" required>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Descripción</label>
+                <textarea id="description" name="description" rows="3">{{ config.description|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'admin_configurations' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.admin-form-container {
+    max-width: 600px;
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="number"],
+.admin-form input[type="email"],
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.admin-form input[type="text"]:focus,
+.admin-form input[type="number"]:focus,
+.admin-form input[type="email"]:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.2);
+}
+
+.admin-form input:disabled {
+    background: #2d2d2d;
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+.form-help {
+    display: block;
+    margin-top: 5px;
+    color: #b0b0b0;
+    font-size: 12px;
+}
+</style>
+{% endblock %}

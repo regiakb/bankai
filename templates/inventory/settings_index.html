@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings - BANKAI{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="message message-{{ message.tags }}" style="margin-bottom: 20px;">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Health section (top) -->
+    <section class="health-section" style="margin-bottom: 32px; padding: 20px; border-radius: 8px; border: 1px solid #404040; background: #252525;">
+        <h3 style="color: #e0e0e0; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            {% if health.overall == 'ok' %}
+            <span style="color: #4caf50;">●</span> Health
+            {% elif health.overall == 'warning' %}
+            <span style="color: #ff9800;">●</span> Health
+            {% else %}
+            <span style="color: #f44336;">●</span> Health
+            {% endif %}
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+            {% for c in health.checks %}
+            <div style="padding: 12px; background: #1a1a1a; border-radius: 6px; border-left: 4px solid {% if c.status == 'ok' %}#4caf50{% elif c.status == 'warning' %}#ff9800{% else %}#f44336{% endif %};">
+                <div style="font-weight: 600; color: #e0e0e0; margin-bottom: 4px;">{{ c.name }}</div>
+                <div style="font-size: 13px; color: #b0b0b0;">{{ c.message }}</div>
+                {% if c.last_run %}
+                <div style="font-size: 12px; color: #888; margin-top: 6px;">{{ c.last_run|date:"Y-m-d H:i" }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Section 1: Configuration (full width) -->
+    <section style="margin-bottom: 40px;">
+        <h3 style="color: #c41e3a; margin-bottom: 20px; border-bottom: 1px solid #404040; padding-bottom: 10px;">🔧 Configuration</h3>
+        <form method="post" action="{% url 'setup_wizard' %}">
+            {% csrf_token %}
+            <div style="background: #252525; border: 1px solid #404040; border-radius: 8px; padding: 25px; margin-bottom: 25px;">
+                <h4 style="color: #e0e0e0; margin-bottom: 16px;">System</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label for="discovery_cidr" style="display: block; color: #e0e0e0; margin-bottom: 8px; font-weight: 500;">Discovery CIDR</label>
+                        <input type="text" id="discovery_cidr" name="discovery_cidr" value="{{ discovery_cidr }}" placeholder="192.168.1.0/24" required style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label for="discovery_interval" style="display: block; color: #e0e0e0; margin-bottom: 8px; font-weight: 500;">Discovery interval (min)</label>
+                        <input type="number" id="discovery_interval" name="discovery_interval" value="{{ discovery_interval }}" min="1" required style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label for="service_scan_interval" style="display: block; color: #e0e0e0; margin-bottom: 8px; font-weight: 500;">Service scan interval (min)</label>
+                        <input type="number" id="service_scan_interval" name="service_scan_interval" value="{{ service_scan_interval }}" min="1" required style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 14px;">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label for="proxmox_sync_interval" style="display: block; color: #e0e0e0; margin-bottom: 8px; font-weight: 500;">Proxmox sync interval (min)</label>
+                        <input type="number" id="proxmox_sync_interval" name="proxmox_sync_interval" value="{{ proxmox_sync_interval }}" min="1" required style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label for="adguard_sync_interval" style="display: block; color: #e0e0e0; margin-bottom: 8px; font-weight: 500;">AdGuard sync interval (min)</label>
+                        <input type="number" id="adguard_sync_interval" name="adguard_sync_interval" value="{{ adguard_sync_interval|default:60 }}" min="1" required style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; align-items: flex-end; padding-bottom: 4px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="notify_new_service" name="notify_new_service" {% if notify_new_service %}checked{% endif %} style="width: 20px; height: 20px; cursor: pointer;">
+                            <span style="color: #b0b0b0;">Send Telegram notifications for new IPs and new services</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div style="background: #252525; border: 1px solid #404040; border-radius: 8px; padding: 25px; margin-bottom: 25px;">
+                <h4 style="color: #e0e0e0; margin-bottom: 16px;">📱 Telegram (Default instance)</h4>
+                <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
+                    <input type="checkbox" id="telegram_enabled" name="telegram_enabled" {% if telegram_enabled %}checked{% endif %} onchange="toggleTelegramFields()" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #e0e0e0; font-weight: 500;">Enable</span>
+                </label>
+                <div id="telegram_fields" style="{% if not telegram_enabled %}display: none;{% else %}display: grid;{% endif %} grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div><label for="telegram_bot_token" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Bot Token</label><input type="text" id="telegram_bot_token" name="telegram_bot_token" value="{{ telegram_bot_token }}" placeholder="From @BotFather" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="telegram_chat_id" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Chat ID</label><input type="text" id="telegram_chat_id" name="telegram_chat_id" value="{{ telegram_chat_id }}" placeholder="Chat ID" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                </div>
+                <div id="telegram_test_section" style="{% if not telegram_enabled %}display: none;{% endif %} margin-top: 16px; padding-top: 16px; border-top: 1px solid #333;">
+                    <p style="color: #b0b0b0; margin-bottom: 10px;">Test notifications (sends a sample message to Telegram with buttons):</p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" id="btn_simulate_new_ip" class="btn" style="background: #444; color: #fff; padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer;">Simulate new IP</button>
+                        <button type="button" id="btn_simulate_new_service" class="btn" style="background: #444; color: #fff; padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer;">Simulate new service</button>
+                    </div>
+                    <p id="telegram_test_result" style="margin-top: 10px; font-size: 13px; color: #b0b0b0;"></p>
+                </div>
+                <div id="telegram_commands_section" style="{% if not telegram_enabled %}display: none;{% endif %} margin-top: 20px; padding-top: 16px; border-top: 1px solid #333;">
+                    <p style="color: #e0e0e0; font-weight: 600; margin-bottom: 10px;">🤖 How to use the bot</p>
+                    <p style="color: #b0b0b0; margin-bottom: 12px; font-size: 14px;">Open Telegram, find your bot (by the name you gave it in @BotFather) and type <strong>/start</strong>. Notifications include buttons; you can also use these commands:</p>
+                    <ul style="color: #b0b0b0; margin: 0 0 12px 20px; font-size: 14px; line-height: 1.8;">
+                        <li><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">/start</code> — Start and list commands</li>
+                        <li><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">/help</code> — Detailed help</li>
+                        <li><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">/setname IP name</code> — Set host name (e.g. /setname 192.168.1.10 My Server)</li>
+                        <li><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">/scan discovery</code> [CIDR] — Run discovery scan</li>
+                        <li><code style="background: #1a1a1a; padding: 2px 6px; border-radius: 4px;">/scan services</code> [targets] — Run service scan</li>
+                    </ul>
+                    <p style="color: #888; font-size: 13px;">In new IP or new service notifications you will see the <strong>«Set name»</strong> button; tap it and the bot will show you how to type the /setname command.</p>
+                </div>
+            </div>
+            <div style="background: #252525; border: 1px solid #404040; border-radius: 8px; padding: 25px; margin-bottom: 25px;">
+                <h4 style="color: #e0e0e0; margin-bottom: 16px;">🖥️ Proxmox (Default instance)</h4>
+                <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
+                    <input type="checkbox" id="proxmox_enabled" name="proxmox_enabled" {% if proxmox_enabled %}checked{% endif %} onchange="toggleProxmoxFields()" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #e0e0e0; font-weight: 500;">Enable</span>
+                </label>
+                <div id="proxmox_fields" style="{% if not proxmox_enabled %}display: none;{% else %}display: grid;{% endif %} grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div><label for="proxmox_url" style="display: block; color: #e0e0e0; margin-bottom: 8px;">URL</label><input type="url" id="proxmox_url" name="proxmox_url" value="{{ proxmox_url }}" placeholder="https://proxmox:8006" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="proxmox_token_id" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Token ID</label><input type="text" id="proxmox_token_id" name="proxmox_token_id" value="{{ proxmox_token_id }}" placeholder="user@pam!token" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="proxmox_token_secret" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Token Secret</label><input type="password" id="proxmox_token_secret" name="proxmox_token_secret" value="{{ proxmox_token_secret }}" placeholder="Secret" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="proxmox_node" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Node (optional)</label><input type="text" id="proxmox_node" name="proxmox_node" value="{{ proxmox_node }}" placeholder="pve" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                </div>
+            </div>
+            <div style="background: #252525; border: 1px solid #404040; border-radius: 8px; padding: 25px; margin-bottom: 25px;">
+                <h4 style="color: #e0e0e0; margin-bottom: 16px;">🛡️ AdGuard Home (Default instance)</h4>
+                <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
+                    <input type="checkbox" id="adguard_enabled" name="adguard_enabled" {% if adguard_enabled %}checked{% endif %} onchange="toggleAdguardFields()" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="color: #e0e0e0; font-weight: 500;">Enable</span>
+                </label>
+                <div id="adguard_fields" style="{% if not adguard_enabled %}display: none;{% else %}display: grid;{% endif %} grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div><label for="adguard_url" style="display: block; color: #e0e0e0; margin-bottom: 8px;">URL</label><input type="url" id="adguard_url" name="adguard_url" value="{{ adguard_url }}" placeholder="http://adguard:80" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="adguard_username" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Username</label><input type="text" id="adguard_username" name="adguard_username" value="{{ adguard_username }}" placeholder="Admin user" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                    <div><label for="adguard_password" style="display: block; color: #e0e0e0; margin-bottom: 8px;">Password</label><input type="password" id="adguard_password" name="adguard_password" value="{{ adguard_password }}" placeholder="Password" style="width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;"></div>
+                </div>
+            </div>
+            <button type="submit" class="btn" style="background: #c41e3a; color: #fff; padding: 12px 24px; font-size: 14px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer;">Save configuration</button>
+        </form>
+    </section>
+
+    <!-- Section 2: Integrations (full width) -->
+    <section id="integrations" style="margin-bottom: 40px;">
+        <h3 style="color: #c41e3a; margin-bottom: 20px; border-bottom: 1px solid #404040; padding-bottom: 10px;">🔌 Integrations</h3>
+        <p style="color: #b0b0b0; margin-bottom: 16px;">Multiple instances per type. Add or edit below; Edit/Test open full-page.</p>
+        {% for group in integration_groups %}
+        <div style="background: #252525; border: 1px solid #404040; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <h4 style="color: #e0e0e0; margin: 0;">{{ group.label }}</h4>
+                <a href="{% url 'integration_add' group.name %}" class="btn" style="background: #c41e3a; color: #fff; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 13px;">+ Add {{ group.label }}</a>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for inst in group.instances %}
+                <li style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333;">
+                    <span style="color: #e0e0e0;"><strong>{{ inst.display_name|default:"Default" }}</strong> <span style="color: #b0b0b0; font-size: 13px;">— {% if inst.enabled %}<span style="color: #4caf50;">Enabled</span>{% else %}<span style="color: #888;">Disabled</span>{% endif %}</span></span>
+                    <span class="action-buttons">
+                        <a href="{% url 'integration_edit' inst.pk %}" class="btn-action-edit">Edit</a>
+                        <a href="{% url 'integration_edit' inst.pk %}?test=1" class="btn-action-edit">Test</a>
+                        <a href="{% url 'integration_delete' inst.pk %}" class="btn-action-delete">Delete</a>
+                    </span>
+                </li>
+                {% empty %}
+                <li style="color: #888; padding: 10px 0;">No instances.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- Section 3: Users (full width, staff only) -->
+    {% if user.is_staff %}
+    <section>
+        <h3 style="color: #c41e3a; margin-bottom: 20px; border-bottom: 1px solid #404040; padding-bottom: 10px;">👤 Users</h3>
+        <div class="admin-header" style="margin-bottom: 16px;">
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search..." value="{{ search }}" class="filter-input">
+                <select name="is_staff" class="filter-select">
+                    <option value="">All</option>
+                    <option value="yes" {% if is_staff_filter == 'yes' %}selected{% endif %}>Staff</option>
+                    <option value="no" {% if is_staff_filter == 'no' %}selected{% endif %}>No Staff</option>
+                </select>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="?page=1" class="btn-clear">Clear</a>
+            </form>
+            <a href="{% url 'user_create' %}" class="btn btn-primary">+ New User</a>
+        </div>
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Staff</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td><strong>{{ u.username }}</strong></td>
+                        <td>{{ u.email|default:"-" }}</td>
+                        <td>{{ u.get_full_name|default:"-" }}</td>
+                        <td><span class="badge badge-{% if u.is_staff %}success{% else %}danger{% endif %}">{% if u.is_staff %}Yes{% else %}No{% endif %}</span></td>
+                        <td><span class="badge badge-{% if u.is_active %}success{% else %}danger{% endif %}">{% if u.is_active %}Yes{% else %}No{% endif %}</span></td>
+                        <td><a href="{% url 'user_detail' u.id %}" class="btn-action btn-edit">Edit</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="empty-state">No users</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if users.has_other_pages %}
+        <div class="admin-pagination" style="margin-top: 16px;">
+            {% if users.has_previous %}<a href="?page={{ users.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_staff_filter %}&is_staff={{ is_staff_filter }}{% endif %}" class="pagination-link">← Previous</a>{% endif %}
+            <span class="pagination-info">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+            {% if users.has_next %}<a href="?page={{ users.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_staff_filter %}&is_staff={{ is_staff_filter }}{% endif %}" class="pagination-link">Next →</a>{% endif %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+
+<script>
+function toggleTelegramFields() {
+  var c = document.getElementById('telegram_enabled');
+  var f = document.getElementById('telegram_fields');
+  var t = document.getElementById('telegram_test_section');
+  var cmd = document.getElementById('telegram_commands_section');
+  f.style.display = c.checked ? 'grid' : 'none';
+  if (t) t.style.display = c.checked ? 'block' : 'none';
+  if (cmd) cmd.style.display = c.checked ? 'block' : 'none';
+}
+function toggleProxmoxFields() { var c = document.getElementById('proxmox_enabled'); var f = document.getElementById('proxmox_fields'); f.style.display = c.checked ? 'grid' : 'none'; }
+function toggleAdguardFields() { var c = document.getElementById('adguard_enabled'); var f = document.getElementById('adguard_fields'); f.style.display = c.checked ? 'grid' : 'none'; }
+
+(function() {
+  var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+  var csrfToken = csrf ? csrf.value : '';
+  function sendTest(type) {
+    var resultEl = document.getElementById('telegram_test_result');
+    if (resultEl) resultEl.textContent = 'Sending…';
+    fetch('{% url "telegram_test_notification" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ type: type }),
+      credentials: 'same-origin'
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (resultEl) resultEl.textContent = data.ok ? '✓ Sent. Check Telegram.' : (data.message || data.error || 'Failed');
+    }).catch(function(e) {
+      if (resultEl) resultEl.textContent = 'Error: ' + e.message;
+    });
+  }
+  var btnIp = document.getElementById('btn_simulate_new_ip');
+  var btnSvc = document.getElementById('btn_simulate_new_service');
+  if (btnIp) btnIp.addEventListener('click', function() { sendTest('new_ip'); });
+  if (btnSvc) btnSvc.addEventListener('click', function() { sendTest('new_service'); });
+})();
+</script>
+{% endblock %}

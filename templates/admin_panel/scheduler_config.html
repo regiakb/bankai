@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scheduler Configuration - Admin Panel{% endblock %}
+{% block page_title %}Scheduler Configuration{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-breadcrumb">
+        <a href="{% url 'admin_configurations' %}">← Back to Configurations</a>
+    </div>
+    
+    <div class="admin-form-container">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+            
+            <div class="form-section">
+                <h3 class="section-title">Start Time</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="scheduler_start_hour">Hour (0-23)</label>
+                        {{ form.scheduler_start_hour }}
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduler_start_minute">Minute (0-59)</label>
+                        {{ form.scheduler_start_minute }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="section-title">Intervals (in minutes)</h3>
+                <div class="form-group">
+                    <label for="discovery_interval">Discovery Scan</label>
+                    {{ form.discovery_interval }}
+                    {% if form.discovery_interval.help_text %}
+                    <small class="form-help">{{ form.discovery_interval.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="service_scan_interval">Service Scan</label>
+                    {{ form.service_scan_interval }}
+                    {% if form.service_scan_interval.help_text %}
+                    <small class="form-help">{{ form.service_scan_interval.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="proxmox_sync_interval">Proxmox Sync</label>
+                    {{ form.proxmox_sync_interval }}
+                    {% if form.proxmox_sync_interval.help_text %}
+                    <small class="form-help">{{ form.proxmox_sync_interval.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="adguard_sync_interval">AdGuard Sync</label>
+                    {{ form.adguard_sync_interval }}
+                    {% if form.adguard_sync_interval.help_text %}
+                    <small class="form-help">{{ form.adguard_sync_interval.help_text }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="section-title">Task Delays (in minutes)</h3>
+                <div class="form-group">
+                    <label for="discovery_delay">Discovery Delay</label>
+                    {{ form.discovery_delay }}
+                    {% if form.discovery_delay.help_text %}
+                    <small class="form-help">{{ form.discovery_delay.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="service_delay">Service Scan Delay</label>
+                    {{ form.service_delay }}
+                    {% if form.service_delay.help_text %}
+                    <small class="form-help">{{ form.service_delay.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="proxmox_delay">Proxmox Sync Delay</label>
+                    {{ form.proxmox_delay }}
+                    {% if form.proxmox_delay.help_text %}
+                    <small class="form-help">{{ form.proxmox_delay.help_text }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="adguard_delay">AdGuard Sync Delay</label>
+                    {{ form.adguard_delay }}
+                    {% if form.adguard_delay.help_text %}
+                    <small class="form-help">{{ form.adguard_delay.help_text }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                <a href="{% url 'admin_configurations' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #404040;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.admin-form input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.admin-form input[type="number"]:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.2);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

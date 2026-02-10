@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit {{ type_label }}{% else %}Add {{ type_label }}{% endif %} - BANKAI{% endblock %}
+{% block page_title %}{% if is_edit %}Edit {{ type_label }} ({{ integration.display_name|default:"Default" }}){% else %}Add {{ type_label }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="admin-page admin-form-page">
+    <header class="admin-form-page__header">
+        <a href="{% url 'settings_index' %}" class="btn-back">← Back to Settings</a>
+    </header>
+
+    <div class="admin-form-page__body">
+        <div class="admin-form-page__card">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small class="form-help">{{ field.help_text }}</small>{% endif %}
+                    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'settings_index' %}" class="btn btn-secondary">Cancel</a>
+                    {% if is_edit %}
+                    <a href="{% url 'integration_edit' integration.pk %}?test=1" class="btn" style="background: #ffc107; color: #1a1a1a; text-decoration: none;">Test connection</a>
+                    {% if integration.name == 'telegram' %}
+                    <p class="form-help" style="margin-top: 12px; color: #888;">The bot runs automatically when the app starts (polling). No webhook or manual command needed.</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </form>
+            {% if test_result is not None %}
+            <div class="form-test-result form-test-result--{% if test_result %}success{% else %}error{% endif %}">
+                <strong>{% if test_result %}✓ Connection successful{% else %}✗ Connection error{% endif %}</strong>
+                <p>{{ test_message }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

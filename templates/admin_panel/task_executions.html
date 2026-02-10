@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Task Executions - Admin Panel{% endblock %}
+{% block page_title %}Task Executions{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <div class="admin-filters">
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search..." value="{{ search }}" class="filter-input">
+                <select name="task" class="filter-select">
+                    <option value="">All tasks</option>
+                    {% for value, label in task_choices %}
+                    <option value="{{ value }}" {% if task_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="filter-select">
+                    <option value="">All statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="{% url 'admin_task_executions' %}" class="btn-clear">Clear</a>
+            </form>
+        </div>
+    </div>
+    
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;"></th>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Items Processed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr class="task-row" data-task-id="{{ task.id }}">
+                    <td>
+                        <button class="toggle-details" onclick="toggleTaskDetails({{ task.id }})">▼</button>
+                    </td>
+                    <td>{{ task.get_task_name_display }}</td>
+                    <td>
+                        <span class="badge badge-{% if task.status == 'success' %}success{% elif task.status == 'error' %}danger{% else %}warning{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{% timezone "Europe/Madrid" %}{{ task.started_at|date:"d/m/Y H:i" }}{% endtimezone %}</td>
+                    <td>{% if task.completed_at %}{% timezone "Europe/Madrid" %}{{ task.completed_at|date:"d/m/Y H:i" }}{% endtimezone %}{% else %}-{% endif %}</td>
+                    <td>{{ task.items_processed }}</td>
+                </tr>
+                <tr class="task-details" id="task-details-{{ task.id }}" style="display: none;">
+                    <td colspan="6">
+                        <div class="task-details-content">
+                            <div class="detail-section">
+                                <h4>Information</h4>
+                                <div class="detail-grid">
+                                    <div><strong>Task:</strong> {{ task.get_task_name_display }}</div>
+                                    <div><strong>Status:</strong> <span class="badge badge-{% if task.status == 'success' %}success{% elif task.status == 'error' %}danger{% else %}warning{% endif %}">{{ task.get_status_display }}</span></div>
+                                    <div><strong>Started:</strong> {% timezone "Europe/Madrid" %}{{ task.started_at|date:"d/m/Y H:i:s" }}{% endtimezone %}</div>
+                                    <div><strong>Completed:</strong> {% if task.completed_at %}{% timezone "Europe/Madrid" %}{{ task.completed_at|date:"d/m/Y H:i:s" }}{% endtimezone %}{% else %}-{% endif %}</div>
+                                    {% if task.completed_at %}
+                                    <div><strong>Duration:</strong> {{ task.completed_at|timesince:task.started_at }}</div>
+                                    {% endif %}
+                                    <div><strong>Items Processed:</strong> {{ task.items_processed }}</div>
+                                </div>
+                                <div style="margin-top: 15px;">
+                                    <form method="post" action="{% url 'admin_task_executions' %}" onsubmit="return confirm('Delete this task execution?');" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="delete_task" value="{{ task.id }}">
+                                        <button type="submit" class="btn-delete">Delete Task</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% if task.error_message %}
+                            <div class="detail-section">
+                                <h4>Error</h4>
+                                <pre class="error-output">{{ task.error_message }}</pre>
+                            </div>
+                            {% endif %}
+                            {% if task.output %}
+                            <div class="detail-section">
+                                <h4>Output</h4>
+                                <pre class="task-output">{{ task.output }}</pre>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">No executions</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if tasks.has_other_pages %}
+    <div class="admin-pagination">
+        {% if tasks.has_previous %}
+        <a href="?page={{ tasks.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if task_filter %}&task={{ task_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="pagination-link">← Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ tasks.number }} of {{ tasks.paginator.num_pages }}</span>
+        {% if tasks.has_next %}
+        <a href="?page={{ tasks.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if task_filter %}&task={{ task_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="pagination-link">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleTaskDetails(taskId) {
+    const detailsRow = document.getElementById('task-details-' + taskId);
+    const button = event.target;
+    if (detailsRow.style.display === 'none') {
+        detailsRow.style.display = 'table-row';
+        button.textContent = '▲';
+    } else {
+        detailsRow.style.display = 'none';
+        button.textContent = '▼';
+    }
+}
+</script>
+
+<style>
+.toggle-details {
+    background: none;
+    border: none;
+    color: #c41e3a;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 5px 10px;
+    transition: color 0.2s;
+}
+
+.toggle-details:hover {
+    color: #a01a2e;
+}
+
+.task-details {
+    background: #1a1a1a;
+}
+
+.task-details-content {
+    padding: 20px;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section h4 {
+    color: #e0e0e0;
+    font-size: 16px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #404040;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.detail-grid div {
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.detail-grid strong {
+    color: #b0b0b0;
+    margin-right: 8px;
+}
+
+pre {
+    background: #1a1a1a;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    padding: 15px;
+    overflow-x: auto;
+    color: #e0e0e0;
+    font-size: 12px;
+    line-height: 1.6;
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+.error-output {
+    color: #ff6b6b;
+}
+
+.task-output {
+    color: #e0e0e0;
+}
+
+.btn-delete {
+    padding: 8px 16px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Merge Duplicates - BANKAI{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Merge Duplicate Hosts</h2>
+        <a href="{% url 'hosts' %}" class="btn">← Back to Hosts</a>
+    </div>
+    
+    <div style="padding: 20px;">
+        <p style="margin-bottom: 20px; color: var(--text-secondary);">
+            This tool will automatically merge duplicate hosts that share the same IP address.
+            It will keep the best host (preferring Proxmox sources, then named hosts, then most recent)
+            and merge all data from duplicates into it.
+        </p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="dry_run" checked>
+                    <span>Dry run (preview only, no changes)</span>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Run Merge</button>
+        </form>
+        
+        {% if output %}
+        <div style="margin-top: 30px; padding: 15px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px;">
+            <h3 style="margin-bottom: 15px;">Merge Results:</h3>
+            <pre style="color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; overflow-x: auto;">{{ output }}</pre>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,609 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Dashboard - BANKAI{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid">
+    <div class="card">
+        <h3>Active Hosts</h3>
+        <div style="font-size: 32px; font-weight: bold; color: #c41e3a;">{{ stats.active_hosts }}</div>
+        <div style="font-size: 14px; color: #b0b0b0;">of {{ stats.total_hosts }} total</div>
+    </div>
+    
+    <div class="card">
+        <h3>Online IPs</h3>
+        <div style="font-size: 32px; font-weight: bold; color: #c41e3a;">{{ stats.online_ips }}</div>
+        <div style="font-size: 14px; color: #b0b0b0;">of {{ stats.total_ips }} total</div>
+    </div>
+    
+    <div class="card">
+        <h3>Total Services</h3>
+        <div style="font-size: 32px; font-weight: bold; color: #c41e3a;">{{ stats.total_services }}</div>
+    </div>
+    
+    <div class="card">
+        <h3>Alerts (24h)</h3>
+        <div style="font-size: 32px; font-weight: bold; color: #c41e3a;">{{ stats.alerts_24h }}</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Recent Alerts</h3>
+    {% if stats.recent_alerts %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Host</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in stats.recent_alerts %}
+                <tr>
+                    <td>
+                        <span class="badge badge-{% if alert.type == 'new_ip' %}success{% elif alert.type == 'new_service' %}info{% elif alert.type == 'error' %}danger{% elif alert.type == 'task_completed' %}info{% else %}warning{% endif %}">
+                            {{ alert.get_type_display }}
+                        </span>
+                    </td>
+                    <td>{{ alert.message }}</td>
+                    <td>{{ alert.related_host.name|default:"—" }}</td>
+                    <td>{% timezone "Europe/Madrid" %}{{ alert.created_at|date:"Y-m-d H:i" }}{% endtimezone %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mobile-card-view">
+        {% for alert in stats.recent_alerts %}
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">
+                    <span class="badge badge-{% if alert.type == 'new_ip' %}success{% elif alert.type == 'new_service' %}info{% elif alert.type == 'error' %}danger{% elif alert.type == 'task_completed' %}info{% else %}warning{% endif %}">
+                        {{ alert.get_type_display }}
+                    </span>
+                </span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Message:</span>
+                <span class="mobile-card-value">{{ alert.message }}</span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Host:</span>
+                <span class="mobile-card-value">{{ alert.related_host.name|default:"—" }}</span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Time:</span>
+                <span class="mobile-card-value">{% timezone "Europe/Madrid" %}{{ alert.created_at|date:"Y-m-d H:i" }}{% endtimezone %}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div style="margin-top: 20px; text-align: right;">
+        <a href="{% url 'alerts' %}" class="btn">View All Alerts</a>
+    </div>
+    {% else %}
+    <p style="text-align: center; padding: 40px; color: #b0b0b0;">No alerts in the last 24 hours</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Last Task Executions</h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Status</th>
+                    <th>Last Execution</th>
+                    <th>Duration</th>
+                    <th>Items Processed</th>
+                    <th>Time for Next Scan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Discovery Scan</td>
+                    <td>
+                        {% if stats.last_discovery %}
+                            {% if stats.last_discovery.status == 'success' %}
+                                <span class="badge badge-success">✓ Success</span>
+                            {% elif stats.last_discovery.status == 'error' %}
+                                <span class="badge badge-danger">✗ Error</span>
+                            {% else %}
+                                <span class="badge badge-warning">⏳ Running</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge">Never</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if stats.last_discovery %}{% timezone "Europe/Madrid" %}{{ stats.last_discovery.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</td>
+                    <td>{% if stats.discovery_duration %}{{ stats.discovery_duration }}{% else %}—{% endif %}</td>
+                    <td>{% if stats.last_discovery %}{{ stats.last_discovery.items_processed }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if stats.next_discovery %}
+                            <span id="countdown-discovery" data-next-run="{{ stats.countdown_discovery.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_discovery.interval_seconds|default:'' }}">
+                                {{ stats.next_discovery.minutes }} min {{ stats.next_discovery.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Service Scan</td>
+                    <td>
+                        {% if stats.last_services %}
+                            {% if stats.last_services.status == 'success' %}
+                                <span class="badge badge-success">✓ Success</span>
+                            {% elif stats.last_services.status == 'error' %}
+                                <span class="badge badge-danger">✗ Error</span>
+                            {% else %}
+                                <span class="badge badge-warning">⏳ Running</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge">Never</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if stats.last_services %}{% timezone "Europe/Madrid" %}{{ stats.last_services.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</td>
+                    <td>{% if stats.services_duration %}{{ stats.services_duration }}{% else %}—{% endif %}</td>
+                    <td>{% if stats.last_services %}{{ stats.last_services.items_processed }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if stats.next_services %}
+                            <span id="countdown-services" data-next-run="{{ stats.countdown_services.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_services.interval_seconds|default:'' }}">
+                                {{ stats.next_services.minutes }} min {{ stats.next_services.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Proxmox Sync</td>
+                    <td>
+                        {% if stats.last_proxmox %}
+                            {% if stats.last_proxmox.status == 'success' %}
+                                <span class="badge badge-success">✓ Success</span>
+                            {% elif stats.last_proxmox.status == 'error' %}
+                                <span class="badge badge-danger">✗ Error</span>
+                            {% else %}
+                                <span class="badge badge-warning">⏳ Running</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge">Never</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if stats.last_proxmox %}{% timezone "Europe/Madrid" %}{{ stats.last_proxmox.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</td>
+                    <td>{% if stats.proxmox_duration %}{{ stats.proxmox_duration }}{% else %}—{% endif %}</td>
+                    <td>{% if stats.last_proxmox %}{{ stats.last_proxmox.items_processed }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if stats.next_proxmox %}
+                            <span id="countdown-proxmox" data-next-run="{{ stats.countdown_proxmox.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_proxmox.interval_seconds|default:'' }}">
+                                {{ stats.next_proxmox.minutes }} min {{ stats.next_proxmox.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>AdGuard Home Sync</td>
+                    <td>
+                        {% if stats.last_adguard %}
+                            {% if stats.last_adguard.status == 'success' %}
+                                <span class="badge badge-success">✓ Success</span>
+                            {% elif stats.last_adguard.status == 'error' %}
+                                <span class="badge badge-danger">✗ Error</span>
+                            {% else %}
+                                <span class="badge badge-warning">⏳ Running</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge">Never</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if stats.last_adguard %}{% timezone "Europe/Madrid" %}{{ stats.last_adguard.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</td>
+                    <td>{% if stats.adguard_duration %}{{ stats.adguard_duration }}{% else %}—{% endif %}</td>
+                    <td>{% if stats.last_adguard %}{{ stats.last_adguard.items_processed }}{% else %}—{% endif %}</td>
+                    <td>
+                        {% if stats.next_adguard %}
+                            <span id="countdown-adguard" data-next-run="{{ stats.countdown_adguard.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_adguard.interval_seconds|default:'' }}">
+                                {{ stats.next_adguard.minutes }} min {{ stats.next_adguard.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mobile-card-view">
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">Discovery Scan</span>
+                <button class="toggle-details-btn" onclick="toggleCardDetails(this)">View details</button>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Status:</span>
+                <span class="mobile-card-value">
+                    {% if stats.last_discovery %}
+                        {% if stats.last_discovery.status == 'success' %}
+                            <span class="badge badge-success">✓ Success</span>
+                        {% elif stats.last_discovery.status == 'error' %}
+                            <span class="badge badge-danger">✗ Error</span>
+                        {% else %}
+                            <span class="badge badge-warning">⏳ Running</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge">Never</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mobile-card-details">
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Last Execution:</span>
+                    <span class="mobile-card-value">{% if stats.last_discovery %}{% timezone "Europe/Madrid" %}{{ stats.last_discovery.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Duration:</span>
+                    <span class="mobile-card-value">{% if stats.discovery_duration %}{{ stats.discovery_duration }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Items Processed:</span>
+                    <span class="mobile-card-value">{% if stats.last_discovery %}{{ stats.last_discovery.items_processed }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Next Scan:</span>
+                    <span class="mobile-card-value">
+                        {% if stats.next_discovery %}
+                            <span id="countdown-discovery-mobile" data-next-run="{{ stats.countdown_discovery.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_discovery.interval_seconds|default:'' }}">
+                                {{ stats.next_discovery.minutes }} min {{ stats.next_discovery.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">Service Scan</span>
+                <button class="toggle-details-btn" onclick="toggleCardDetails(this)">View details</button>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Status:</span>
+                <span class="mobile-card-value">
+                    {% if stats.last_services %}
+                        {% if stats.last_services.status == 'success' %}
+                            <span class="badge badge-success">✓ Success</span>
+                        {% elif stats.last_services.status == 'error' %}
+                            <span class="badge badge-danger">✗ Error</span>
+                        {% else %}
+                            <span class="badge badge-warning">⏳ Running</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge">Never</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mobile-card-details">
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Last Execution:</span>
+                    <span class="mobile-card-value">{% if stats.last_services %}{% timezone "Europe/Madrid" %}{{ stats.last_services.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Duration:</span>
+                    <span class="mobile-card-value">{% if stats.services_duration %}{{ stats.services_duration }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Items Processed:</span>
+                    <span class="mobile-card-value">{% if stats.last_services %}{{ stats.last_services.items_processed }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Next Scan:</span>
+                    <span class="mobile-card-value">
+                        {% if stats.next_services %}
+                            <span id="countdown-services-mobile" data-next-run="{{ stats.countdown_services.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_services.interval_seconds|default:'' }}">
+                                {{ stats.next_services.minutes }} min {{ stats.next_services.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">Proxmox Sync</span>
+                <button class="toggle-details-btn" onclick="toggleCardDetails(this)">View details</button>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Status:</span>
+                <span class="mobile-card-value">
+                    {% if stats.last_proxmox %}
+                        {% if stats.last_proxmox.status == 'success' %}
+                            <span class="badge badge-success">✓ Success</span>
+                        {% elif stats.last_proxmox.status == 'error' %}
+                            <span class="badge badge-danger">✗ Error</span>
+                        {% else %}
+                            <span class="badge badge-warning">⏳ Running</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge">Never</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mobile-card-details">
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Last Execution:</span>
+                    <span class="mobile-card-value">{% if stats.last_proxmox %}{% timezone "Europe/Madrid" %}{{ stats.last_proxmox.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Duration:</span>
+                    <span class="mobile-card-value">{% if stats.proxmox_duration %}{{ stats.proxmox_duration }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Items Processed:</span>
+                    <span class="mobile-card-value">{% if stats.last_proxmox %}{{ stats.last_proxmox.items_processed }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Next Scan:</span>
+                    <span class="mobile-card-value">
+                        {% if stats.next_proxmox %}
+                            <span id="countdown-proxmox-mobile" data-next-run="{{ stats.countdown_proxmox.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_proxmox.interval_seconds|default:'' }}">
+                                {{ stats.next_proxmox.minutes }} min {{ stats.next_proxmox.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">AdGuard Home Sync</span>
+                <button class="toggle-details-btn" onclick="toggleCardDetails(this)">View details</button>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Status:</span>
+                <span class="mobile-card-value">
+                    {% if stats.last_adguard %}
+                        {% if stats.last_adguard.status == 'success' %}
+                            <span class="badge badge-success">✓ Success</span>
+                        {% elif stats.last_adguard.status == 'error' %}
+                            <span class="badge badge-danger">✗ Error</span>
+                        {% else %}
+                            <span class="badge badge-warning">⏳ Running</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge">Never</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mobile-card-details">
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Last Execution:</span>
+                    <span class="mobile-card-value">{% if stats.last_adguard %}{% timezone "Europe/Madrid" %}{{ stats.last_adguard.started_at|date:"Y-m-d H:i:s" }}{% endtimezone %}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Duration:</span>
+                    <span class="mobile-card-value">{% if stats.adguard_duration %}{{ stats.adguard_duration }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Items Processed:</span>
+                    <span class="mobile-card-value">{% if stats.last_adguard %}{{ stats.last_adguard.items_processed }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Next Scan:</span>
+                    <span class="mobile-card-value">
+                        {% if stats.next_adguard %}
+                            <span id="countdown-adguard-mobile" data-next-run="{{ stats.countdown_adguard.next_run_timestamp|default:'' }}" data-interval="{{ stats.countdown_adguard.interval_seconds|default:'' }}">
+                                {{ stats.next_adguard.minutes }} min {{ stats.next_adguard.seconds }} sec
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stats.countdown_discovery.next_run_timestamp %}
+<script>
+(function() {
+    var nextRun = {{ stats.countdown_discovery.next_run_timestamp }};
+    var interval = {{ stats.countdown_discovery.interval_seconds }};
+    var element = document.getElementById('countdown-discovery');
+    
+    function updateCountdown() {
+        var now = Math.floor(Date.now() / 1000);
+        var diff = nextRun - now;
+        
+        if (diff <= 0) {
+            nextRun = now + interval;
+            diff = interval;
+        }
+        
+        var minutes = Math.floor(diff / 60);
+        var seconds = diff % 60;
+        
+        if (element) {
+            element.textContent = minutes + ' min ' + seconds + ' sec';
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
+{% endif %}
+
+{% if stats.countdown_services.next_run_timestamp %}
+<script>
+(function() {
+    var nextRun = {{ stats.countdown_services.next_run_timestamp }};
+    var interval = {{ stats.countdown_services.interval_seconds }};
+    var element = document.getElementById('countdown-services');
+    
+    function updateCountdown() {
+        var now = Math.floor(Date.now() / 1000);
+        var diff = nextRun - now;
+        
+        if (diff <= 0) {
+            nextRun = now + interval;
+            diff = interval;
+        }
+        
+        var minutes = Math.floor(diff / 60);
+        var seconds = diff % 60;
+        
+        if (element) {
+            element.textContent = minutes + ' min ' + seconds + ' sec';
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
+{% endif %}
+
+{% if stats.countdown_proxmox.next_run_timestamp %}
+<script>
+(function() {
+    var nextRun = {{ stats.countdown_proxmox.next_run_timestamp }};
+    var interval = {{ stats.countdown_proxmox.interval_seconds }};
+    var element = document.getElementById('countdown-proxmox');
+    var elementMobile = document.getElementById('countdown-proxmox-mobile');
+    
+    function updateCountdown() {
+        var now = Math.floor(Date.now() / 1000);
+        var diff = nextRun - now;
+        
+        if (diff <= 0) {
+            nextRun = now + interval;
+            diff = interval;
+        }
+        
+        var minutes = Math.floor(diff / 60);
+        var seconds = diff % 60;
+        var text = minutes + ' min ' + seconds + ' sec';
+        
+        if (element) {
+            element.textContent = text;
+        }
+        if (elementMobile) {
+            elementMobile.textContent = text;
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
+{% endif %}
+
+{% if stats.countdown_adguard.next_run_timestamp %}
+<script>
+(function() {
+    var nextRun = {{ stats.countdown_adguard.next_run_timestamp }};
+    var interval = {{ stats.countdown_adguard.interval_seconds }};
+    var element = document.getElementById('countdown-adguard');
+    var elementMobile = document.getElementById('countdown-adguard-mobile');
+    
+    function updateCountdown() {
+        var now = Math.floor(Date.now() / 1000);
+        var diff = nextRun - now;
+        
+        if (diff <= 0) {
+            nextRun = now + interval;
+            diff = interval;
+        }
+        
+        var minutes = Math.floor(diff / 60);
+        var seconds = diff % 60;
+        var text = minutes + ' min ' + seconds + ' sec';
+        
+        if (element) {
+            element.textContent = text;
+        }
+        if (elementMobile) {
+            elementMobile.textContent = text;
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
+{% endif %}
+
+<script>
+function toggleCardDetails(btn) {
+    const card = btn.closest('.mobile-card');
+    const details = card.querySelector('.mobile-card-details');
+    if (details.classList.contains('show')) {
+        details.classList.remove('show');
+        btn.textContent = 'View details';
+        btn.classList.remove('expanded');
+    } else {
+        details.classList.add('show');
+        btn.textContent = 'Hide details';
+        btn.classList.add('expanded');
+    }
+}
+
+// Update mobile countdowns
+{% if stats.countdown_discovery.next_run_timestamp %}
+(function() {
+    var nextRun = {{ stats.countdown_discovery.next_run_timestamp }};
+    var interval = {{ stats.countdown_discovery.interval_seconds }};
+    var elementMobile = document.getElementById('countdown-discovery-mobile');
+    if (elementMobile) {
+        setInterval(function() {
+            var now = Math.floor(Date.now() / 1000);
+            var diff = nextRun - now;
+            if (diff <= 0) {
+                nextRun = now + interval;
+                diff = interval;
+            }
+            var minutes = Math.floor(diff / 60);
+            var seconds = diff % 60;
+            elementMobile.textContent = minutes + ' min ' + seconds + ' sec';
+        }, 1000);
+    }
+})();
+{% endif %}
+
+{% if stats.countdown_services.next_run_timestamp %}
+(function() {
+    var nextRun = {{ stats.countdown_services.next_run_timestamp }};
+    var interval = {{ stats.countdown_services.interval_seconds }};
+    var elementMobile = document.getElementById('countdown-services-mobile');
+    if (elementMobile) {
+        setInterval(function() {
+            var now = Math.floor(Date.now() / 1000);
+            var diff = nextRun - now;
+            if (diff <= 0) {
+                nextRun = now + interval;
+                diff = interval;
+            }
+            var minutes = Math.floor(diff / 60);
+            var seconds = diff % 60;
+            elementMobile.textContent = minutes + ' min ' + seconds + ' sec';
+        }, 1000);
+    }
+})();
+{% endif %}
+</script>
+{% endblock %}

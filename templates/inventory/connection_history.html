@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Connection History - BANKAI{% endblock %}
+{% block page_title %}Connection History{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <h3>Network connection history</h3>
+        <a href="{% url 'hosts' %}" class="btn btn-secondary">← Back to Hosts</a>
+    </div>
+
+    <form method="get" style="margin-bottom: 24px; padding: 16px; background: #252525; border-radius: 4px; border: 1px solid #404040; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+        <div>
+            <label style="display: block; color: #b0b0b0; margin-bottom: 6px; font-size: 13px;">Host (optional)</label>
+            <select name="host_id" style="padding: 10px 14px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; min-width: 180px;">
+                <option value="">All hosts</option>
+                {% for h in hosts_for_filter %}
+                <option value="{{ h.id }}" {% if host_id_filter == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display: block; color: #b0b0b0; margin-bottom: 6px; font-size: 13px;">Days</label>
+            <select name="days" style="padding: 10px 14px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;">
+                <option value="7" {% if days == 7 %}selected{% endif %}>7</option>
+                <option value="14" {% if days == 14 %}selected{% endif %}>14</option>
+                <option value="30" {% if days == 30 %}selected{% endif %}>30</option>
+                <option value="90" {% if days == 90 %}selected{% endif %}>90</option>
+            </select>
+        </div>
+        <button type="submit" class="btn">Apply</button>
+    </form>
+
+    <h4 style="color: #e0e0e0; margin-bottom: 12px;">Hosts online over time</h4>
+    <div style="background: #1a1a1a; border-radius: 4px; padding: 20px; margin-bottom: 28px; height: 320px;">
+        <canvas id="connectionChart" style="max-height: 280px;"></canvas>
+    </div>
+
+    <h4 style="color: #e0e0e0; margin-bottom: 12px;">Event log</h4>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Host</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in events %}
+                <tr>
+                    <td>{{ e.recorded_at|date:"Y-m-d H:i:s" }}</td>
+                    <td><a href="{% url 'edit_host' e.host_id %}" style="color: #6bb6ff;">{{ e.host.name }}</a></td>
+                    <td>{% if e.is_online %}<span style="color: #4caf50;">Online</span>{% else %}<span style="color: #f44336;">Offline</span>{% endif %}</td>
+                    <td style="color: #b0b0b0;">
+                        {% if e.source %}{{ e.source }}{% elif e.task_execution %}{{ e.task_execution.get_task_name_display }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="color: #888;">No events in the selected period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    var labels = {{ chart_labels|safe }};
+    var data = {{ chart_data|safe }};
+    if (labels.length === 0) {
+        labels = ['No data'];
+        data = [0];
+    }
+    var ctx = document.getElementById('connectionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Hosts online',
+                data: data,
+                borderColor: '#4caf50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                fill: true,
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#b0b0b0', maxTicksLimit: 12 },
+                    grid: { color: '#333' }
+                },
+                y: {
+                    min: 0,
+                    ticks: { color: '#b0b0b0', stepSize: 1 },
+                    grid: { color: '#333' }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

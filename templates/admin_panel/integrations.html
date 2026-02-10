@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Integrations - Admin Panel{% endblock %}
+{% block page_title %}Integrations{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-cards-grid-integrations">
+        {% for integration in integrations %}
+        <div class="admin-card">
+            <div class="card-header">
+                <h3>{{ integration.get_name_display }}</h3>
+                <span class="badge badge-{% if integration.enabled %}success{% else %}danger{% endif %}">
+                    {% if integration.enabled %}Enabled{% else %}Disabled{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="card-description">
+                    {% if integration.name == 'telegram' %}
+                        Telegram notification configuration
+                    {% elif integration.name == 'proxmox' %}
+                        Proxmox server synchronization
+                    {% elif integration.name == 'adguard' %}
+                        AdGuard Home synchronization
+                    {% else %}
+                        Custom integration
+                    {% endif %}
+                </p>
+                {% if integration.last_test %}
+                <div class="card-meta">
+                    <small>Last test: {% timezone "Europe/Madrid" %}{{ integration.last_test|date:"d/m/Y H:i" }}{% endtimezone %}</small>
+                    {% if integration.last_test_result %}
+                    <span class="badge badge-success">✓ OK</span>
+                    {% else %}
+                    <span class="badge badge-danger">✗ Error</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'admin_integration_detail' integration.id %}" class="btn btn-primary">Configure</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">No integrations configured</div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.admin-cards-grid-integrations {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.admin-card {
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+    border-color: #c41e3a;
+}
+
+.card-header {
+    padding: 20px;
+    border-bottom: 1px solid #404040;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: #e0e0e0;
+    font-size: 18px;
+}
+
+.card-body {
+    padding: 20px;
+    flex: 1;
+}
+
+.card-description {
+    color: #b0b0b0;
+    margin: 0 0 15px 0;
+    line-height: 1.6;
+}
+
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #404040;
+}
+
+.card-meta small {
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.card-footer {
+    padding: 15px 20px;
+    background: #2d2d2d;
+    border-top: 1px solid #404040;
+}
+
+@media (max-width: 1200px) {
+    .admin-cards-grid-integrations {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-cards-grid-integrations {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

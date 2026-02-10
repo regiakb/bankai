@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Users - Admin Panel{% endblock %}
+{% block page_title %}Users{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <a href="{% url 'settings_index' %}" class="btn-back" style="text-decoration: none;">← Back to Settings</a>
+        <div class="admin-filters">
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search by name, email..." value="{{ search }}" class="filter-input">
+                <select name="is_staff" class="filter-select">
+                    <option value="">All</option>
+                    <option value="yes" {% if is_staff_filter == 'yes' %}selected{% endif %}>Staff</option>
+                    <option value="no" {% if is_staff_filter == 'no' %}selected{% endif %}>No Staff</option>
+                </select>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="{% url 'users_list' %}" class="btn-clear">Clear</a>
+            </form>
+        </div>
+        <div class="admin-actions">
+            <a href="{% url 'user_create' %}" class="btn btn-primary">+ New User</a>
+        </div>
+    </div>
+    
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Staff</th>
+                    <th>Superusuario</th>
+                    <th>Activo</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email|default:"-" }}</td>
+                    <td>{{ user.get_full_name|default:"-" }}</td>
+                    <td>
+                        <span class="badge badge-{% if user.is_staff %}success{% else %}danger{% endif %}">
+                            {% if user.is_staff %}Sí{% else %}No{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if user.is_superuser %}success{% else %}danger{% endif %}">
+                            {% if user.is_superuser %}Sí{% else %}No{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if user.is_active %}success{% else %}danger{% endif %}">
+                            {% if user.is_active %}Sí{% else %}No{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'user_detail' user.id %}" class="btn-action btn-edit">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-state">No users</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if users.has_other_pages %}
+    <div class="admin-pagination">
+        {% if users.has_previous %}
+        <a href="?page={{ users.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_staff_filter %}&is_staff={{ is_staff_filter }}{% endif %}" class="pagination-link">← Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ users.number }} de {{ users.paginator.num_pages }}</span>
+        {% if users.has_next %}
+        <a href="?page={{ users.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if is_staff_filter %}&is_staff={{ is_staff_filter }}{% endif %}" class="pagination-link">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

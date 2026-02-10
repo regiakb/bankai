@@ -1,0 +1,147 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}Scheduler Configuration - BANKAI{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:inventory_systemconfig_changelist' %}">System Configurations</a>
+    &rsaquo; Scheduler Configuration
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Scheduler Configuration</h1>
+<p style="color: #333; margin-bottom: 20px; font-size: 14px;">Configure task intervals and execution schedule. All intervals are in minutes.</p>
+
+<form method="post" id="scheduler-config-form">
+    {% csrf_token %}
+    
+    <fieldset class="module aligned">
+        <h2>Start Time</h2>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.scheduler_start_hour.id_for_label }}">{{ form.scheduler_start_hour.label }}:</label>
+                {{ form.scheduler_start_hour }}
+                {{ form.scheduler_start_hour.errors }}
+            </div>
+            <div>
+                <label for="{{ form.scheduler_start_minute.id_for_label }}">{{ form.scheduler_start_minute.label }}:</label>
+                {{ form.scheduler_start_minute }}
+                {{ form.scheduler_start_minute.errors }}
+            </div>
+        </div>
+        <p class="help">Tasks will start at this time each day, then execute with the specified delays.</p>
+    </fieldset>
+    
+    <fieldset class="module aligned">
+        <h2>Task Intervals (in minutes)</h2>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.discovery_interval.id_for_label }}">{{ form.discovery_interval.label }}:</label>
+                {{ form.discovery_interval }}
+                {{ form.discovery_interval.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.service_scan_interval.id_for_label }}">{{ form.service_scan_interval.label }}:</label>
+                {{ form.service_scan_interval }}
+                {{ form.service_scan_interval.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.proxmox_sync_interval.id_for_label }}">{{ form.proxmox_sync_interval.label }}:</label>
+                {{ form.proxmox_sync_interval }}
+                {{ form.proxmox_sync_interval.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.adguard_sync_interval.id_for_label }}">{{ form.adguard_sync_interval.label }}:</label>
+                {{ form.adguard_sync_interval }}
+                {{ form.adguard_sync_interval.errors }}
+            </div>
+        </div>
+        <p class="help">How often each task should run (in minutes).</p>
+    </fieldset>
+    
+    <fieldset class="module aligned">
+        <h2>Task Delays (in minutes from start time)</h2>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.discovery_delay.id_for_label }}">{{ form.discovery_delay.label }}:</label>
+                {{ form.discovery_delay }}
+                {{ form.discovery_delay.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.service_delay.id_for_label }}">{{ form.service_delay.label }}:</label>
+                {{ form.service_delay }}
+                {{ form.service_delay.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.proxmox_delay.id_for_label }}">{{ form.proxmox_delay.label }}:</label>
+                {{ form.proxmox_delay }}
+                {{ form.proxmox_delay.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div>
+                <label for="{{ form.adguard_delay.id_for_label }}">{{ form.adguard_delay.label }}:</label>
+                {{ form.adguard_delay }}
+                {{ form.adguard_delay.errors }}
+            </div>
+        </div>
+        <p class="help">Delay in minutes after the start time when each task should execute. This staggers the tasks to avoid conflicts.</p>
+    </fieldset>
+    
+    <div class="submit-row">
+        <input type="submit" value="Save Configuration" class="default" />
+    </div>
+</form>
+
+<style>
+.form-row {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+.form-row label {
+    display: inline-block;
+    width: 250px;
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 14px;
+}
+.form-row input[type="number"] {
+    width: 150px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+.help {
+    color: #555;
+    font-size: 13px;
+    margin-top: 10px;
+    font-style: italic;
+}
+fieldset {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+fieldset h2 {
+    margin-top: 0;
+    color: #417690;
+    border-bottom: 2px solid #417690;
+    padding-bottom: 10px;
+}
+</style>
+{% endblock %}

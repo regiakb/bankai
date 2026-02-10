@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Alerts - Admin Panel{% endblock %}
+{% block page_title %}Alerts{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <div class="admin-filters">
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search..." value="{{ search }}" class="filter-input">
+                <select name="type" class="filter-select">
+                    <option value="">All types</option>
+                    {% for value, label in alert_types %}
+                    <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="{% url 'admin_alerts' %}" class="btn-clear">Clear</a>
+            </form>
+        </div>
+        <div class="admin-actions">
+            <form method="post" action="{% url 'admin_alerts_delete_all' %}" onsubmit="return confirm('Delete all alerts?');">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger">Delete All</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Host</th>
+                    <th>IP</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td>
+                        <span class="badge badge-{% if alert.type == 'new_ip' %}success{% elif alert.type == 'new_service' %}info{% elif alert.type == 'error' %}danger{% elif alert.type == 'task_completed' %}info{% else %}warning{% endif %}">
+                            {{ alert.get_type_display }}
+                        </span>
+                    </td>
+                    <td>{{ alert.message|truncatewords:15 }}</td>
+                    <td>{% if alert.related_host %}<a href="{% url 'admin_host_detail' alert.related_host.id %}">{{ alert.related_host.name }}</a>{% else %}-{% endif %}</td>
+                    <td>{% if alert.related_ip %}{{ alert.related_ip.ip }}{% else %}-{% endif %}</td>
+                    <td>{% timezone "Europe/Madrid" %}{{ alert.created_at|date:"d/m/Y H:i" }}{% endtimezone %}</td>
+                    <td>
+                        <a href="{% url 'admin_alert_delete' alert.id %}" class="btn-action btn-delete" onclick="return confirm('Delete this alert?');">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">No alerts</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if alerts.has_other_pages %}
+    <div class="admin-pagination">
+        {% if alerts.has_previous %}
+        <a href="?page={{ alerts.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}" class="pagination-link">← Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ alerts.number }} of {{ alerts.paginator.num_pages }}</span>
+        {% if alerts.has_next %}
+        <a href="?page={{ alerts.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}" class="pagination-link">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.admin-page {
+    padding: 20px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.admin-filters {
+    flex: 1;
+    min-width: 300px;
+}
+
+.filter-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-input, .filter-select {
+    padding: 10px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #252525;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.filter-input {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-select {
+    min-width: 150px;
+}
+
+.btn-filter, .btn-clear {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-filter {
+    background: #c41e3a;
+    color: white;
+}
+
+.btn-filter:hover {
+    background: #a01a2e;
+}
+
+.btn-clear {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+.btn-clear:hover {
+    background: #505050;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-danger {
+    padding: 10px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.admin-table-container {
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table thead {
+    background: #2d2d2d;
+}
+
+.admin-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #e0e0e0;
+    border-bottom: 2px solid #c41e3a;
+}
+
+.admin-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #404040;
+    color: #e0e0e0;
+}
+
+.admin-table tbody tr:hover {
+    background: #2d2d2d;
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #b0b0b0;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+}
+
+.admin-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.pagination-link {
+    padding: 8px 16px;
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    color: #c41e3a;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.pagination-link:hover {
+    background: #2d2d2d;
+    border-color: #c41e3a;
+}
+
+.pagination-info {
+    color: #b0b0b0;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-success {
+    background: rgba(40, 167, 69, 0.2);
+    color: #90ee90;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+}
+
+.badge-danger {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.badge-warning {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffd700;
+    border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.badge-info {
+    background: rgba(23, 162, 184, 0.2);
+    color: #6bb6ff;
+    border: 1px solid rgba(23, 162, 184, 0.4);
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+    }
+    
+    .filter-form {
+        width: 100%;
+    }
+    
+    .admin-table {
+        font-size: 12px;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 8px;
+    }
+}
+</style>
+{% endblock %}

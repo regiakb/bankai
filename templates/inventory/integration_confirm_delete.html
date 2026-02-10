@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ integration.get_name_display }} - BANKAI{% endblock %}
+{% block page_title %}Delete integration{% endblock %}
+
+{% block content %}
+<div class="admin-page admin-form-page">
+    <header class="admin-form-page__header">
+        <a href="{% url 'settings_index' %}" class="btn-back">← Back to Settings</a>
+    </header>
+
+    <div class="admin-form-page__body">
+        <div class="admin-form-page__card">
+            <p style="color: #e0e0e0; margin: 0 0 20px 0;">Are you sure you want to delete <strong>{{ integration.get_name_display }}</strong> &quot;{{ integration.display_name|default:"Default" }}&quot;?</p>
+            <form method="post" style="margin: 0;">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="background: #c41e3a;">Delete</button>
+                    <a href="{% url 'settings_index' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | BANKAI Admin{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <img src="{% static 'images/logo.png' %}" alt="BANKAI" style="height: 40px; vertical-align: middle; margin-right: 10px;">
+        <span style="color: #c41e3a; font-weight: 600;">BANKAI</span> <span style="color: #b0b0b0;">Admin</span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

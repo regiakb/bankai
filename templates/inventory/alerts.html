@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Alerts - BANKAI{% endblock %}
+
+{% block page_title %}System Alerts{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">System Alerts</h3>
+        {% if alerts %}
+        <form method="post" action="{% url 'delete_all_alerts' %}" style="margin: 0;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete all alerts', message: 'Are you sure you want to delete all alerts? This action cannot be undone.', danger: true, confirmLabel: 'Delete all', onConfirm: function() { f.submit(); } }); return false;">
+            {% csrf_token %}
+            <button type="submit" class="btn-action-delete">Delete all alerts</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <form method="get" style="margin-bottom: 20px; padding: 20px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+        <div class="form-group" style="max-width: 300px; margin-bottom: 0;">
+            <label>Type</label>
+            <select name="type" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="new_ip" {% if type_filter == 'new_ip' %}selected{% endif %}>New IP</option>
+                <option value="new_service" {% if type_filter == 'new_service' %}selected{% endif %}>New Service</option>
+                <option value="host_down" {% if type_filter == 'host_down' %}selected{% endif %}>Host Down</option>
+                <option value="error" {% if type_filter == 'error' %}selected{% endif %}>Error</option>
+                <option value="task_completed" {% if type_filter == 'task_completed' %}selected{% endif %}>Task Completed</option>
+            </select>
+        </div>
+    </form>
+    
+    {% if alerts %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Type</th>
+                    <th>Message</th>
+                    <th style="width: 150px;">Related Host</th>
+                    <th style="width: 150px;">Related IP</th>
+                    <th style="width: 180px;">Time</th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr id="alert-row-{{ alert.id }}">
+                    <td>
+                        <span class="badge badge-{% if alert.type == 'new_ip' %}success{% elif alert.type == 'new_service' %}info{% elif alert.type == 'error' %}danger{% elif alert.type == 'task_completed' %}info{% else %}warning{% endif %}">
+                            {{ alert.get_type_display }}
+                        </span>
+                    </td>
+                    <td>{{ alert.message }}</td>
+                    <td>{{ alert.related_host.name|default:"—" }}</td>
+                    <td><code>{{ alert.related_ip.ip|default:"—" }}</code></td>
+                    <td>{% timezone "Europe/Madrid" %}{{ alert.created_at|date:"Y-m-d H:i:s" }}{% endtimezone %}</td>
+                    <td>
+                        <div class="action-buttons">
+                            {% if alert.details %}
+                            <button type="button" onclick="toggleAlertDetails({{ alert.id }})" class="btn-action-edit" id="toggle-btn-{{ alert.id }}">View Details</button>
+                            {% endif %}
+                            <form method="post" action="{% url 'delete_alert' alert.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete alert', message: 'Delete this alert?', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action-delete">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% if alert.details %}
+                <tr id="alert-details-{{ alert.id }}" style="display: none;">
+                    <td colspan="6" style="background: #252525; padding: 20px;">
+                        <div style="background: #1a1a1a; padding: 15px; border-radius: 4px; border: 1px solid #404040;">
+                            <h4 style="color: #90ee90; margin-bottom: 10px;">Task Results:</h4>
+                            <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 12px; margin: 0; padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040;">{{ alert.details }}</pre>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mobile-card-view">
+        {% for alert in alerts %}
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title">
+                    <span class="badge badge-{% if alert.type == 'new_ip' %}success{% elif alert.type == 'new_service' %}info{% elif alert.type == 'error' %}danger{% elif alert.type == 'task_completed' %}info{% else %}warning{% endif %}">
+                        {{ alert.get_type_display }}
+                    </span>
+                </span>
+                {% if alert.details %}
+                <button class="toggle-details-btn" onclick="toggleAlertDetailsMobile({{ alert.id }})" id="toggle-btn-mobile-{{ alert.id }}">View details</button>
+                {% endif %}
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Message:</span>
+                <span class="mobile-card-value">{{ alert.message }}</span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Host:</span>
+                <span class="mobile-card-value">{{ alert.related_host.name|default:"—" }}</span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">IP:</span>
+                <span class="mobile-card-value"><code>{{ alert.related_ip.ip|default:"—" }}</code></span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Time:</span>
+                <span class="mobile-card-value">{% timezone "Europe/Madrid" %}{{ alert.created_at|date:"Y-m-d H:i:s" }}{% endtimezone %}</span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Actions:</span>
+                <span class="mobile-card-value">
+                    <div class="action-buttons">
+                        <form method="post" action="{% url 'delete_alert' alert.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete alert', message: 'Delete this alert?', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-action-delete">Delete</button>
+                        </form>
+                    </div>
+                </span>
+            </div>
+            {% if alert.details %}
+            <div class="mobile-card-details" id="alert-details-mobile-{{ alert.id }}">
+                <div style="background: #1a1a1a; padding: 15px; border-radius: 4px; border: 1px solid #404040; margin-top: 10px;">
+                    <h4 style="color: #90ee90; margin-bottom: 10px; font-size: 14px;">Task Results:</h4>
+                    <pre style="color: #e0e0e0; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 11px; margin: 0; padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040; overflow-x: auto;">{{ alert.details }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align: center; padding: 40px; color: #b0b0b0;">No alerts found</p>
+    {% endif %}
+</div>
+
+<script>
+function toggleAlertDetails(alertId) {
+    const detailsRow = document.getElementById('alert-details-' + alertId);
+    const toggleBtn = document.getElementById('toggle-btn-' + alertId);
+    
+    if (detailsRow.style.display === 'none') {
+        detailsRow.style.display = 'table-row';
+        toggleBtn.textContent = 'Hide Details';
+    } else {
+        detailsRow.style.display = 'none';
+        toggleBtn.textContent = 'View Details';
+    }
+}
+
+function toggleAlertDetailsMobile(alertId) {
+    const detailsDiv = document.getElementById('alert-details-mobile-' + alertId);
+    const toggleBtn = document.getElementById('toggle-btn-mobile-' + alertId);
+    
+    if (detailsDiv.classList.contains('show')) {
+        detailsDiv.classList.remove('show');
+        toggleBtn.textContent = 'View details';
+        toggleBtn.classList.remove('expanded');
+    } else {
+        detailsDiv.classList.add('show');
+        toggleBtn.textContent = 'Hide details';
+        toggleBtn.classList.add('expanded');
+    }
+}
+</script>
+{% endblock %}

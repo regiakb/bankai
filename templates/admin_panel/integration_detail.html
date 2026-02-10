@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ integration.get_name_display }} - Admin Panel{% endblock %}
+{% block page_title %}{{ integration.get_name_display }}{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <a href="{% url 'admin_integrations' %}" class="btn-back">← Back a Integrations</a>
+    </div>
+    
+    {% if form %}
+    <div class="admin-form-container">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+            
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enabled" {% if integration.enabled %}checked{% endif %}>
+                    <span>Enable integration</span>
+                </label>
+            </div>
+            
+            {% for field in form %}
+            {% if field.name != 'enabled' %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <small class="form-help">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                <div class="form-error">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'admin_integrations' %}" class="btn btn-secondary">Cancel</a>
+                <a href="?test=1" class="btn btn-test">Test Connection</a>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="admin-form-container">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="enabled" {% if integration.enabled %}checked{% endif %}>
+                    <span>Enable integration</span>
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'admin_integrations' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    {% if test_result is not None %}
+    <div class="admin-message admin-message-{% if test_result %}success{% else %}error{% endif %}">
+        <strong>{% if test_result %}✓ Connection successful{% else %}✗ Connection error{% endif %}</strong>
+        <p>{{ test_message }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.checkbox-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #2d2d2d;
+    border: 1px solid #404040;
+    border-radius: 4px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.btn-test {
+    background: #ffc107;
+    color: #1a1a1a;
+}
+
+.btn-test:hover {
+    background: #e0a800;
+}
+
+.admin-message {
+    margin-top: 20px;
+    padding: 15px 20px;
+    border-radius: 4px;
+    border: 1px solid;
+}
+
+.admin-message-success {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.4);
+    color: #90ee90;
+}
+
+.admin-message-error {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.4);
+    color: #ff6b6b;
+}
+
+.form-help {
+    display: block;
+    margin-top: 5px;
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.form-error {
+    margin-top: 5px;
+    color: #ff6b6b;
+    font-size: 12px;
+}
+
+.admin-form input[type="password"],
+.admin-form input[type="text"],
+.admin-form input[type="url"],
+.admin-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.form-actions .btn {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}

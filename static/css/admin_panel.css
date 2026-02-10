@@ -1,0 +1,474 @@
+/* Admin Panel Shared Styles - BANKAI Theme */
+
+.admin-page {
+    padding: 20px;
+    max-width: none;
+}
+
+.admin-form-container {
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.admin-form-container--full {
+    max-width: none;
+}
+
+/* Full-page form layout: header bar + centered card */
+.admin-form-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+}
+
+.admin-form-page__header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: #2d2d2d;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.admin-form-page__header .btn-back {
+    flex-shrink: 0;
+}
+
+.admin-form-page__title {
+    color: #e0e0e0;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.admin-form-page__body {
+    flex: 1;
+}
+
+.admin-form-page__card {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 28px 32px;
+}
+
+.admin-form-page__card .form-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.admin-form-page__card .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #404040;
+}
+
+.admin-form-page__card .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form-page__card .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.admin-form-page__card input[type="text"],
+.admin-form-page__card input[type="email"],
+.admin-form-page__card input[type="password"],
+.admin-form-page__card input[type="url"],
+.admin-form-page__card select,
+.admin-form-page__card textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.admin-form-page__card input:focus,
+.admin-form-page__card select:focus,
+.admin-form-page__card textarea:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.2);
+}
+
+.admin-form-page__card .checkbox-group {
+    padding: 14px 16px;
+    background: #2d2d2d;
+    border: 1px solid #404040;
+    border-radius: 4px;
+}
+
+.admin-form-page__card .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.admin-form-page__card .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.admin-form-page__card .form-help {
+    display: block;
+    margin-top: 6px;
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.admin-form-page__card .form-error {
+    color: #ff6b6b;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.admin-form-page__card .form-test-result {
+    margin-top: 20px;
+    padding: 16px 20px;
+    border-radius: 4px;
+    border: 1px solid;
+}
+
+.admin-form-page__card .form-test-result--success {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: rgba(40, 167, 69, 0.4);
+    color: #90ee90;
+}
+
+.admin-form-page__card .form-test-result--error {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.4);
+    color: #ff6b6b;
+}
+
+.admin-form-page__card .form-test-result p {
+    margin: 8px 0 0 0;
+}
+
+@media (max-width: 768px) {
+    .admin-form-page__card .form-row-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.admin-filters {
+    flex: 1;
+    min-width: 300px;
+}
+
+.filter-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-input, .filter-select {
+    padding: 10px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #252525;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.filter-input {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-select {
+    min-width: 150px;
+}
+
+.btn-filter, .btn-clear {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-filter {
+    background: #c41e3a;
+    color: white;
+}
+
+.btn-filter:hover {
+    background: #a01a2e;
+}
+
+.btn-clear {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+.btn-clear:hover {
+    background: #505050;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-danger {
+    padding: 10px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.admin-table-container {
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table thead {
+    background: #2d2d2d;
+}
+
+.admin-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #e0e0e0;
+    border-bottom: 2px solid #c41e3a;
+}
+
+.admin-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #404040;
+    color: #e0e0e0;
+}
+
+.admin-table tbody tr:hover {
+    background: #2d2d2d;
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #b0b0b0;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-view {
+    background: #c41e3a;
+    color: white;
+}
+
+.btn-view:hover {
+    background: #a01a2e;
+}
+
+.btn-edit {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+.btn-edit:hover {
+    background: #505050;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+}
+
+.admin-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.pagination-link {
+    padding: 8px 16px;
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    color: #c41e3a;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.pagination-link:hover {
+    background: #2d2d2d;
+    border-color: #c41e3a;
+}
+
+.pagination-info {
+    color: #b0b0b0;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-success {
+    background: rgba(40, 167, 69, 0.2);
+    color: #90ee90;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+}
+
+.badge-danger {
+    background: rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.badge-warning {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffd700;
+    border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.badge-info {
+    background: rgba(23, 162, 184, 0.2);
+    color: #6bb6ff;
+    border: 1px solid rgba(23, 162, 184, 0.4);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #c41e3a;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #a01a2e;
+}
+
+.btn-secondary {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+    background: #505050;
+}
+
+.btn-back {
+    background: #dc3545;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-back:hover {
+    background: #c82333;
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+    }
+    
+    .filter-form {
+        width: 100%;
+    }
+    
+    .admin-table {
+        font-size: 12px;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 8px;
+    }
+}

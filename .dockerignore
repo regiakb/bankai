@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+*.txt
+!requirements.txt
+
+# Scripts
+*.sh
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+*.tar.gz
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Misc
+*.gnmap
+scheduler.log
+bankai.log

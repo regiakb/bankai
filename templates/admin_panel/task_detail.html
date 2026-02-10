@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}{{ task.get_task_name_display }} - Admin Panel{% endblock %}
+{% block page_title %}{{ task.get_task_name_display }}{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-breadcrumb">
+        <a href="{% url 'admin_task_executions' %}">← Back to Executions</a>
+    </div>
+    
+    <div class="admin-detail-grid">
+        <div class="admin-detail-card">
+            <h3>Information</h3>
+            <div class="detail-field">
+                <label>Task:</label>
+                <span>{{ task.get_task_name_display }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Status:</label>
+                <span class="badge badge-{% if task.status == 'success' %}success{% elif task.status == 'error' %}danger{% else %}warning{% endif %}">
+                    {{ task.get_status_display }}
+                </span>
+            </div>
+            <div class="detail-field">
+                <label>Started:</label>
+                <span>{% timezone "Europe/Madrid" %}{{ task.started_at|date:"d/m/Y H:i:s" }}{% endtimezone %}</span>
+            </div>
+            <div class="detail-field">
+                <label>Completed:</label>
+                <span>{% if task.completed_at %}{% timezone "Europe/Madrid" %}{{ task.completed_at|date:"d/m/Y H:i:s" }}{% endtimezone %}{% else %}-{% endif %}</span>
+            </div>
+            {% if task.completed_at %}
+            <div class="detail-field">
+                <label>Duration:</label>
+                <span>{{ task.completed_at|timesince:task.started_at }}</span>
+            </div>
+            {% endif %}
+            <div class="detail-field">
+                <label>Items Processed:</label>
+                <span>{{ task.items_processed }}</span>
+            </div>
+        </div>
+        
+        {% if task.error_message %}
+        <div class="admin-detail-card">
+            <h3>Error</h3>
+            <pre class="error-output">{{ task.error_message }}</pre>
+        </div>
+        {% endif %}
+        
+        {% if task.output %}
+        <div class="admin-detail-card admin-detail-card-full">
+            <h3>Output</h3>
+            <pre class="task-output">{{ task.output }}</pre>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-detail-card-full {
+    grid-column: 1 / -1;
+}
+
+pre {
+    background: #1a1a1a;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    padding: 15px;
+    overflow-x: auto;
+    color: #e0e0e0;
+    font-size: 12px;
+    line-height: 1.6;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.error-output {
+    color: #ff6b6b;
+}
+
+.task-output {
+    color: #e0e0e0;
+}
+</style>
+{% endblock %}

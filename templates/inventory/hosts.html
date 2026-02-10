@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Hosts - BANKAI{% endblock %}
+
+{% block page_title %}Network Hosts & Services{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Network Hosts & Services</h3>
+        <div>
+            <a href="{% url 'connection_history' %}" class="btn btn-secondary" style="margin-right: 10px;">Connection history</a>
+            <a href="{% url 'merge_duplicates' %}" class="btn btn-secondary" style="margin-right: 10px;">Merge Duplicates</a>
+            <a href="{% url 'export_hosts_csv' %}" class="btn">Export CSV</a>
+        </div>
+    </div>
+    
+    <form method="get" style="margin-bottom: 20px; padding: 20px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Search</label>
+                <input type="text" name="name" value="{{ name_filter }}" placeholder="Search by name...">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Status</label>
+                <select name="status">
+                    <option value="">All</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Type</label>
+                <select name="type">
+                    <option value="">All</option>
+                    {% for dt in device_types %}
+                        <option value="{{ dt }}" {% if type_filter == dt %}selected{% endif %}>{{ dt|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Source</label>
+                <select name="source">
+                    <option value="">All</option>
+                    {% for src in sources %}
+                        <option value="{{ src }}" {% if source_filter == src %}selected{% endif %}>{{ src|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Service</label>
+                <select name="service">
+                    <option value="">All</option>
+                    {% for svc in services_formatted %}
+                        <option value="{{ svc }}" {% if service_filter == svc %}selected{% endif %}>{{ svc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn">Search</button>
+                <a href="{% url 'hosts' %}" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+    
+    {% if hosts %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th><a href="?{% if name_filter %}name={{ name_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if source_filter %}source={{ source_filter }}&{% endif %}{% if service_filter %}service={{ service_filter }}&{% endif %}sort={% if sort_by == 'name' %}-name{% else %}name{% endif %}" style="text-decoration: none; color: inherit;">Name {% if sort_by == 'name' %}↑{% elif sort_by == '-name' %}↓{% endif %}</a></th>
+                    <th>Type</th>
+                    <th>MAC</th>
+                    <th>Vendor</th>
+                    <th style="min-width: 200px; max-width: 250px;"><a href="?{% if name_filter %}name={{ name_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if source_filter %}source={{ source_filter }}&{% endif %}{% if service_filter %}service={{ service_filter }}&{% endif %}sort={% if sort_by == 'ip' %}-ip{% else %}ip{% endif %}" style="text-decoration: none; color: inherit;">IP Addresses {% if sort_by == 'ip' %}↑{% elif sort_by == '-ip' %}↓{% endif %}</a></th>
+                    <th style="min-width: 120px;">Source</th>
+                    <th>Services</th>
+                    <th style="min-width: 180px;"><a href="?{% if name_filter %}name={{ name_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if source_filter %}source={{ source_filter }}&{% endif %}{% if service_filter %}service={{ service_filter }}&{% endif %}sort={% if sort_by == '-last_seen' or not sort_by %}last_seen{% else %}-last_seen{% endif %}" style="text-decoration: none; color: inherit;">Last Seen {% if sort_by == '-last_seen' or not sort_by %}↓{% elif sort_by == 'last_seen' %}↑{% endif %}</a></th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for host in hosts %}
+                <tr>
+                    <td><strong>{{ host.name }}</strong></td>
+                    <td>
+                        {% if host.source == 'proxmox' %}
+                            {% if host.device_type == 'lxc' %}
+                                <span class="badge badge-success">LXC</span>
+                            {% elif host.device_type == 'qemu' %}
+                                <span class="badge badge-vm">VM</span>
+                            {% else %}
+                                <span class="badge badge-{{ host.device_type|default:'unknown' }}">{{ host.device_type|default:"Unknown"|title }}</span>
+                            {% endif %}
+                        {% else %}
+                            {% if host.device_type == 'server' %}
+                                <span class="badge badge-danger">Server</span>
+                            {% elif host.device_type == 'router' %}
+                                <span class="badge badge-warning">Router</span>
+                            {% elif host.device_type == 'switch' %}
+                                <span class="badge badge-warning">Switch</span>
+                            {% elif host.device_type == 'lxc' %}
+                                <span class="badge badge-success">LXC</span>
+                            {% elif host.device_type == 'qemu' %}
+                                <span class="badge badge-vm">VM</span>
+                            {% elif host.device_type == 'iot' %}
+                                <span class="badge badge-iot">IoT</span>
+                            {% elif host.device_type == 'console' %}
+                                <span class="badge badge-console">Console</span>
+                            {% elif host.device_type == 'phone' %}
+                                <span class="badge badge-phone">Phone</span>
+                            {% elif host.device_type == 'laptop' %}
+                                <span class="badge badge-laptop">Laptop</span>
+                            {% elif host.device_type == 'desktop' %}
+                                <span class="badge badge-desktop">Desktop</span>
+                            {% elif host.device_type == 'tablet' %}
+                                <span class="badge badge-tablet">Tablet</span>
+                            {% elif host.device_type == 'printer' %}
+                                <span class="badge badge-printer">Printer</span>
+                            {% else %}
+                                <span class="badge badge-unknown">Unknown</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td><code>{{ host.mac|default:"—" }}</code></td>
+                    <td>{{ host.vendor|default:"—" }}</td>
+                    <td style="max-width: 250px;">
+                        {% for ip in host.ip_addresses.all %}
+                            <code>{{ ip.ip }}</code>{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            —
+                        {% endfor %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        <span class="badge badge-{% if host.source == 'manual' %}danger{% elif host.source == 'nmap' %}warning{% elif host.source == 'proxmox' %}success{% else %}info{% endif %}">
+                            {{ host.get_source_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if host.services.all %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                {% for service in host.services.all %}
+                                    <span class="badge badge-info" style="font-size: 11px;">{{ service.port }}/{{ service.proto|upper }}{% if service.name %} ({{ service.name }}){% endif %}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">{% timezone "Europe/Madrid" %}{{ host.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}</td>
+                    <td>
+                        <span class="badge badge-{% if host.is_active %}success{% else %}danger{% endif %} {% if not host.is_active %}status-rescan{% endif %}"
+                              {% if not host.is_active %}title="Click to rescan" data-host-id="{{ host.id }}" data-host-name="{{ host.name|escapejs }}" role="button" tabindex="0"{% endif %}>
+                            {% if host.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'connection_history' %}?host_id={{ host.id }}&days=30" class="btn-action-edit" title="View connection history">History</a>
+                            <a href="{% url 'edit_host' host.id %}" class="btn-action-edit">Edit</a>
+                            <form method="post" action="{% url 'delete_host' host.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete host', message: 'Delete host «{{ host.name }}» and all its data (IPs, services)?', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action-delete">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mobile-card-view">
+        {% for host in hosts %}
+        <div class="mobile-card">
+            <div class="mobile-card-header">
+                <span class="mobile-card-title"><strong>{{ host.name }}</strong></span>
+                <button class="toggle-details-btn" onclick="toggleCardDetails(this)">View details</button>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Status:</span>
+                <span class="mobile-card-value">
+                    <span class="badge badge-{% if host.is_active %}success{% else %}danger{% endif %} {% if not host.is_active %}status-rescan{% endif %}"
+                          {% if not host.is_active %}title="Click to rescan" data-host-id="{{ host.id }}" data-host-name="{{ host.name|escapejs }}" role="button" tabindex="0"{% endif %}>
+                        {% if host.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </span>
+            </div>
+            <div class="mobile-card-row">
+                <span class="mobile-card-label">Type:</span>
+                <span class="mobile-card-value">
+                    {% if host.source == 'proxmox' %}
+                        {% if host.device_type == 'lxc' %}
+                            <span class="badge badge-success">LXC</span>
+                        {% elif host.device_type == 'qemu' %}
+                            <span class="badge badge-vm">VM</span>
+                        {% else %}
+                            <span class="badge badge-{{ host.device_type|default:'unknown' }}">{{ host.device_type|default:"Unknown"|title }}</span>
+                        {% endif %}
+                    {% else %}
+                        {% if host.device_type == 'server' %}
+                            <span class="badge badge-danger">Server</span>
+                        {% elif host.device_type == 'router' %}
+                            <span class="badge badge-warning">Router</span>
+                        {% elif host.device_type == 'switch' %}
+                            <span class="badge badge-warning">Switch</span>
+                        {% elif host.device_type == 'lxc' %}
+                            <span class="badge badge-success">LXC</span>
+                        {% elif host.device_type == 'qemu' %}
+                            <span class="badge badge-vm">VM</span>
+                        {% elif host.device_type == 'iot' %}
+                            <span class="badge badge-iot">IoT</span>
+                        {% elif host.device_type == 'console' %}
+                            <span class="badge badge-console">Console</span>
+                        {% elif host.device_type == 'phone' %}
+                            <span class="badge badge-phone">Phone</span>
+                        {% elif host.device_type == 'laptop' %}
+                            <span class="badge badge-laptop">Laptop</span>
+                        {% elif host.device_type == 'desktop' %}
+                            <span class="badge badge-desktop">Desktop</span>
+                        {% elif host.device_type == 'tablet' %}
+                            <span class="badge badge-tablet">Tablet</span>
+                        {% elif host.device_type == 'printer' %}
+                            <span class="badge badge-printer">Printer</span>
+                        {% else %}
+                            <span class="badge badge-unknown">Unknown</span>
+                        {% endif %}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mobile-card-details">
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">MAC:</span>
+                    <span class="mobile-card-value"><code>{{ host.mac|default:"—" }}</code></span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Vendor:</span>
+                    <span class="mobile-card-value">{{ host.vendor|default:"—" }}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">IP Addresses:</span>
+                    <span class="mobile-card-value">
+                        {% for ip in host.ip_addresses.all %}
+                            <code>{{ ip.ip }}</code>{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            —
+                        {% endfor %}
+                    </span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Source:</span>
+                    <span class="mobile-card-value">
+                        <span class="badge badge-{% if host.source == 'manual' %}danger{% elif host.source == 'nmap' %}warning{% elif host.source == 'proxmox' %}success{% else %}info{% endif %}">
+                            {{ host.get_source_display }}
+                        </span>
+                    </span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Services:</span>
+                    <span class="mobile-card-value">
+                        {% if host.services.all %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                {% for service in host.services.all %}
+                                    <span class="badge badge-info" style="font-size: 11px;">{{ service.port }}/{{ service.proto|upper }}{% if service.name %} ({{ service.name }}){% endif %}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Last Seen:</span>
+                    <span class="mobile-card-value">{% timezone "Europe/Madrid" %}{{ host.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}</span>
+                </div>
+                <div class="mobile-card-row">
+                    <span class="mobile-card-label">Actions:</span>
+                    <span class="mobile-card-value">
+                        <div class="action-buttons">
+                            <a href="{% url 'connection_history' %}?host_id={{ host.id }}&days=30" class="btn-action-edit" title="View connection history">History</a>
+                            <a href="{% url 'edit_host' host.id %}" class="btn-action-edit">Edit</a>
+                            <form method="post" action="{% url 'delete_host' host.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete host', message: 'Delete host «{{ host.name }}»?', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action-delete">Delete</button>
+                            </form>
+                        </div>
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align: center; padding: 40px; color: #b0b0b0;">No hosts found</p>
+    {% endif %}
+</div>
+
+<script>
+function getCookie(name) {
+    var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
+}
+
+function toggleCardDetails(btn) {
+    const card = btn.closest('.mobile-card');
+    const details = card.querySelector('.mobile-card-details');
+    if (details.classList.contains('show')) {
+        details.classList.remove('show');
+        btn.textContent = 'View details';
+        btn.classList.remove('expanded');
+    } else {
+        details.classList.add('show');
+        btn.textContent = 'Hide details';
+        btn.classList.add('expanded');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var urlRescan = "{% url 'host_rescan' 99999 %}";
+    var urlStatus = "{% url 'host_status' 99999 %}";
+    var rescanBadges = document.querySelectorAll('.status-rescan');
+    rescanBadges.forEach(function(badge) {
+        function handleRescan() {
+            var hostId = badge.getAttribute('data-host-id');
+            var hostName = badge.getAttribute('data-host-name') || ('Host ' + hostId);
+            if (!hostId) return;
+            var csrftoken = getCookie('csrftoken');
+            fetch(urlRescan.replace('99999', hostId), {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                credentials: 'same-origin'
+            }).then(function(r) {
+                if (r.status === 202) {
+                    showAlertModal({ title: 'Rescan queued', message: 'Quick discovery queued for ' + hostName + '. Status will update when the scan finishes.' });
+                    var pollCount = 0;
+                    var maxPoll = 40;
+                    var poll = setInterval(function() {
+                        pollCount++;
+                        fetch(urlStatus.replace('99999', hostId), { credentials: 'same-origin' })
+                            .then(function(res) { return res.json(); })
+                            .then(function(data) {
+                                if (data.is_active) {
+                                    clearInterval(poll);
+                                    var allBadges = document.querySelectorAll('.status-rescan[data-host-id="' + hostId + '"]');
+                                    allBadges.forEach(function(b) {
+                                        b.textContent = 'Active';
+                                        b.className = 'badge badge-success';
+                                        b.removeAttribute('title');
+                                        b.removeAttribute('data-host-id');
+                                        b.removeAttribute('data-host-name');
+                                        b.removeAttribute('role');
+                                        b.removeAttribute('tabindex');
+                                        b.classList.remove('status-rescan');
+                                    });
+                                }
+                            });
+                        if (pollCount >= maxPoll) clearInterval(poll);
+                    }, 3000);
+                }
+            });
+        }
+        badge.addEventListener('click', handleRescan);
+        badge.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRescan(); } });
+    });
+});
+</script>
+{% endblock %}

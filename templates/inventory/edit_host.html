@@ -1,0 +1,904 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Edit Host - BANKAI{% endblock %}
+
+{% block page_title %}Edit Host: {{ host.name }}{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h3>Host Information</h3>
+        <div class="action-buttons" style="flex-wrap: wrap;">
+            <form method="post" action="{% url 'delete_host' host.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete host', message: 'Delete host «{{ host.name }}» and all its data (IPs, services, hostnames)? This action cannot be undone.', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                {% csrf_token %}
+                <button type="submit" class="btn-action-delete">Delete host</button>
+            </form>
+            {% for ip in host.ip_addresses.all %}
+            <div class="scan-menu-wrapper" style="position: relative; display: inline-block;">
+                <button type="button" onclick="toggleScanMenu('{{ ip.ip }}')" class="btn-action-edit">
+                    🔍 Scan {{ ip.ip }} ▼
+                </button>
+                <div id="scanMenu-{{ ip.ip }}" class="scan-menu" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: #2d2d2d; border: 1px solid #404040; border-radius: 4px; min-width: 250px; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                    <div style="padding: 10px; border-bottom: 1px solid #404040; color: #e0e0e0; font-weight: 600; font-size: 14px;">Select Scan Type:</div>
+                    <button onclick="startScan('{{ ip.ip }}', 'quick')" class="scan-menu-item" style="width: 100%; text-align: left; padding: 10px 15px; background: transparent; border: none; color: #e0e0e0; cursor: pointer; border-bottom: 1px solid #404040;">
+                        <div style="font-weight: 600; color: #6bb6ff;">⚡ Quick Scan</div>
+                        <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">Fast, Top 100 ports, OS detection</div>
+                    </button>
+                    <button onclick="startScan('{{ ip.ip }}', 'quick_plus')" class="scan-menu-item" style="width: 100%; text-align: left; padding: 10px 15px; background: transparent; border: none; color: #e0e0e0; cursor: pointer; border-bottom: 1px solid #404040;">
+                        <div style="font-weight: 600; color: #6bb6ff;">⚡ Quick Scan Plus</div>
+                        <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">Fast, Top 100 ports, OS + Version detection</div>
+                    </button>
+                    <button onclick="startScan('{{ ip.ip }}', 'intense')" class="scan-menu-item" style="width: 100%; text-align: left; padding: 10px 15px; background: transparent; border: none; color: #e0e0e0; cursor: pointer; border-bottom: 1px solid #404040;">
+                        <div style="font-weight: 600; color: #ffd700;">🔥 Intense Scan</div>
+                        <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">Aggressive, OS + Version + Scripts</div>
+                    </button>
+                    <button onclick="startScan('{{ ip.ip }}', 'discover_hostname')" class="scan-menu-item" style="width: 100%; text-align: left; padding: 10px 15px; background: transparent; border: none; color: #e0e0e0; cursor: pointer; border-bottom: 1px solid #404040;">
+                        <div style="font-weight: 600; color: #90ee90;">🌐 Discover Hostname</div>
+                        <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">DNS, NetBIOS, SSL, HTTP hostname discovery</div>
+                    </button>
+                    <button onclick="startScan('{{ ip.ip }}', 'complete')" class="scan-menu-item" style="width: 100%; text-align: left; padding: 10px 15px; background: transparent; border: none; color: #e0e0e0; cursor: pointer;">
+                        <div style="font-weight: 600; color: #c41e3a;">🎯 Complete Scan</div>
+                        <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">All ports, Maximum information gathering</div>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+            <a href="{% url 'hosts' %}" class="btn btn-secondary">← Back to Hosts</a>
+        </div>
+    </div>
+    
+    <table>
+        <tr>
+            <td><strong>Source:</strong></td>
+            <td>{{ host.get_source_display }}</td>
+            <td><strong>First Seen:</strong></td>
+            <td>{% timezone "Europe/Madrid" %}{{ host.first_seen|date:"Y-m-d H:i" }}{% endtimezone %}</td>
+        </tr>
+        <tr>
+            <td><strong>Last Seen:</strong></td>
+            <td>{% timezone "Europe/Madrid" %}{{ host.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}</td>
+            <td><strong>Status:</strong></td>
+            <td>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="is_active_info" {% if host.is_active %}checked{% endif %}>
+                    <span class="badge badge-{% if host.is_active %}success{% else %}danger{% endif %}" id="status_badge">
+                        {% if host.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </label>
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Services:</strong></td>
+            <td>{{ host.services.count }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3>Network Addresses</h3>
+    <div class="network-addresses-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- IP Addresses Box -->
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #404040;">
+                <h4 style="color: #e0e0e0; font-size: 16px; margin: 0;">
+                    📍 IP Addresses
+                </h4>
+                <button type="button" onclick="showAddIpForm()" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;">+ Add IP</button>
+            </div>
+            <div id="ip-addresses-list">
+                {% if host.ip_addresses.all %}
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for ip in host.ip_addresses.all %}
+                    <div id="ip-item-{{ ip.id }}" style="padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <code style="color: #90ee90; font-size: 14px;">{{ ip.ip }}</code>
+                            <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">
+                                {% if ip.online %}
+                                    <span style="color: #90ee90;">● Online</span>
+                                {% else %}
+                                    <span style="color: #ff6b6b;">● Offline</span>
+                                {% endif %}
+                                • {{ ip.get_assignment_display }}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 11px; color: #b0b0b0;">
+                                {% timezone "Europe/Madrid" %}{{ ip.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}
+                            </div>
+                            <button type="button" onclick="deleteIp({{ ip.id }}, '{{ ip.ip }}')" class="btn-action-delete">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: #b0b0b0; text-align: center; padding: 20px;">No IP addresses</p>
+                {% endif %}
+            </div>
+            <!-- Add IP Form (hidden by default) -->
+            <div id="add-ip-form" style="display: none; margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="new-ip-input" placeholder="e.g., 192.168.1.100" style="flex: 1; padding: 8px; background: #252525; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace;">
+                    <button type="button" onclick="addIp()" class="btn btn-success" style="padding: 8px 15px; background: #28a745; border: none; cursor: pointer;">Add</button>
+                    <button type="button" onclick="hideAddIpForm()" class="btn btn-secondary" style="padding: 8px 15px; background: #6c757d; border: none; cursor: pointer;">Cancel</button>
+                </div>
+                <div id="add-ip-error" style="color: #ff6b6b; font-size: 12px; margin-top: 5px; display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Hostnames Box -->
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #404040;">
+                <h4 style="color: #e0e0e0; font-size: 16px; margin: 0;">
+                    🌐 Hostnames
+                </h4>
+                <button type="button" onclick="showAddHostnameForm()" class="btn btn-secondary" style="padding: 5px 15px; font-size: 12px;">+ Add Hostname</button>
+            </div>
+            <div id="hostnames-list">
+                {% if host.hostnames.all %}
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for hostname in host.hostnames.all %}
+                    <div id="hostname-item-{{ hostname.id }}" style="padding: 10px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1;">
+                            <code style="color: #6bb6ff; font-size: 14px;">{{ hostname.name }}</code>
+                            <div style="font-size: 11px; color: #b0b0b0; margin-top: 3px;">
+                                <span class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">
+                                    {{ hostname.source_type|upper }}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 11px; color: #b0b0b0;">
+                                {% timezone "Europe/Madrid" %}{{ hostname.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}
+                            </div>
+                            <button type="button" onclick="deleteHostname({{ hostname.id }}, '{{ hostname.name }}')" class="btn-action-delete">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: #b0b0b0; text-align: center; padding: 20px;">No hostnames discovered yet</p>
+                {% endif %}
+            </div>
+            <!-- Add Hostname Form (hidden by default) -->
+            <div id="add-hostname-form" style="display: none; margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 4px; border: 1px solid #404040;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="new-hostname-input" placeholder="e.g., server.example.com" style="flex: 1; padding: 8px; background: #252525; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace;">
+                    <select id="new-hostname-source" style="padding: 8px; background: #252525; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0;">
+                        <option value="dns">DNS</option>
+                        <option value="PTR">PTR</option>
+                        <option value="user">User</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="addHostname()" class="btn btn-success" style="flex: 1; padding: 8px 15px; background: #28a745; border: none; cursor: pointer;">Add</button>
+                    <button type="button" onclick="hideAddHostnameForm()" class="btn btn-secondary" style="flex: 1; padding: 8px 15px; background: #6c757d; border: none; cursor: pointer;">Cancel</button>
+                </div>
+                <div id="add-hostname-error" style="color: #ff6b6b; font-size: 12px; margin-top: 5px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>Edit Host: {{ host.name }}</h3>
+    </div>
+    
+    <form method="post" id="editHostForm" action="{% url 'edit_host' host.id %}" novalidate>
+        {% csrf_token %}
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" value="{{ host.name }}" required minlength="1">
+            </div>
+            
+            <div class="form-group">
+                <label>Device Type</label>
+                <select name="device_type">
+                    {% for dtype in device_types %}
+                        <option value="{{ dtype }}" {% if host.device_type == dtype %}selected{% endif %}>{{ dtype|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Vendor</label>
+                <input type="text" name="vendor" value="{{ host.vendor|default:'' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>MAC Address</label>
+                <input type="text" value="{{ host.mac|default:'—' }}" disabled>
+                <small style="color: #b0b0b0;">MAC address cannot be changed</small>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Notes</label>
+            <textarea name="notes" rows="4">{{ host.notes|default:'' }}</textarea>
+        </div>
+        
+        <!-- Hidden input to always send is_active value -->
+        <input type="hidden" name="is_active" id="is_active_form" value="{% if host.is_active %}1{% else %}0{% endif %}">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            {% if duplicate_hosts %}
+            <div class="card" style="padding: 20px; background: #252525; border: 1px solid #404040;">
+                <label style="display: block; margin-bottom: 15px; font-weight: 600;">⚠ Duplicate Hosts Detected</label>
+                {% for dup in duplicate_hosts %}
+                <div style="margin-bottom: 15px; padding: 10px; background: #2d2d2d; border-radius: 4px; border: 1px solid #ffd700;">
+                    <div style="margin-bottom: 10px;">
+                        <strong>{{ dup.name }}</strong> ({{ dup.get_source_display }})
+                        {% if dup.ip_addresses.all %}
+                            <div style="margin-top: 5px; font-size: 12px; color: #b0b0b0;">
+                                IPs: {% for ip in dup.ip_addresses.all %}{{ ip.ip }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn" style="background: #28a745; width: 100%;" onclick="mergeHost({{ host.id }}, {{ dup.id }}, '{{ dup.name }}', '{{ host.name }}');">Merge here</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button type="button" class="btn" style="flex: 1;" onclick="console.log('Save button clicked'); syncActiveCheckbox(); const form = document.getElementById('editHostForm'); if (form) { console.log('Submitting form manually...'); form.submit(); }">Save Changes</button>
+            <a href="{% url 'hosts' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- Hidden form for merge action -->
+{% if duplicate_hosts %}
+{% for dup in duplicate_hosts %}
+<form id="mergeForm{{ dup.id }}" method="post" action="{% url 'merge_hosts' host.id dup.id %}" style="display: none;">
+    {% csrf_token %}
+</form>
+{% endfor %}
+{% endif %}
+
+<!-- Success Modal -->
+<div id="successModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1001; align-items: center; justify-content: center;">
+    <div style="background: #2d2d2d; border-radius: 8px; width: 90%; max-width: 500px; padding: 30px; border: 1px solid #404040; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 20px;">✓</div>
+        <h3 style="color: #90ee90; margin-bottom: 15px;">Host Updated Successfully</h3>
+        <p style="color: #e0e0e0; margin-bottom: 25px;">The host information has been saved.</p>
+        <button onclick="closeSuccessModal()" class="btn" style="background: #28a745; width: 100%;">OK</button>
+    </div>
+</div>
+
+<!-- Merge Confirmation Modal -->
+<div id="mergeConfirmModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1002; align-items: center; justify-content: center;">
+    <div style="background: #2d2d2d; border-radius: 8px; width: 90%; max-width: 500px; padding: 30px; border: 1px solid #404040;">
+        <h3 style="color: #ffd700; margin-bottom: 20px; text-align: center;">⚠ Confirm Merge</h3>
+        <p style="color: #e0e0e0; margin-bottom: 20px; text-align: center; line-height: 1.6;">
+            Are you sure you want to merge<br>
+            <strong style="color: #ffd700;" id="mergeConfirmOtherName"></strong><br>
+            into<br>
+            <strong style="color: #90ee90;" id="mergeConfirmCurrentName"></strong>?
+        </p>
+        <p style="color: #b0b0b0; margin-bottom: 25px; text-align: center; font-size: 14px;">
+            This will move all IPs and services from the duplicate host to the current host.
+        </p>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="closeMergeConfirmModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+            <button onclick="confirmMerge()" class="btn" style="flex: 1; background: #28a745;">Confirm Merge</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Modal -->
+<div id="scanModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #2d2d2d; border-radius: 8px; width: 90%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid #404040;">
+        <div style="padding: 20px; border-bottom: 1px solid #404040; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="color: #e0e0e0;">Nmap Scan</h3>
+            <button onclick="closeScanModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #b0b0b0;">×</button>
+        </div>
+        <div id="scanOutput" style="padding: 20px; overflow-y: auto; flex: 1; font-family: monospace; font-size: 12px; background: #1a1a1a; max-height: 500px; border: 1px solid #404040;">
+            <div style="color: #6bb6ff;">Starting scan...</div>
+        </div>
+        <div style="padding: 15px; border-top: 1px solid #404040; text-align: right;">
+            <button onclick="closeScanModal()" class="btn" id="closeScanBtn" style="display: none;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let ipCounter = {{ host.ip_addresses.count|default:1 }};
+
+// Sync active checkbox between info display and form
+let pendingMergeHostId = null;
+
+function mergeHost(hostId, otherHostId, otherHostName, currentHostName) {
+    pendingMergeHostId = otherHostId;
+    document.getElementById('mergeConfirmOtherName').textContent = otherHostName;
+    document.getElementById('mergeConfirmCurrentName').textContent = currentHostName;
+    document.getElementById('mergeConfirmModal').style.display = 'flex';
+}
+
+function confirmMerge() {
+    if (pendingMergeHostId) {
+        const form = document.getElementById('mergeForm' + pendingMergeHostId);
+        if (form) {
+            console.log('Submitting merge form for host', pendingMergeHostId);
+            form.submit();
+        } else {
+            console.error('Merge form not found for host', pendingMergeHostId);
+            closeMergeConfirmModal();
+            showAlertModal({ title: 'Error', message: 'Merge form not found.' });
+        }
+    }
+}
+
+function closeMergeConfirmModal() {
+    document.getElementById('mergeConfirmModal').style.display = 'none';
+    pendingMergeHostId = null;
+}
+
+function syncActiveCheckbox() {
+    try {
+        const infoCheckbox = document.getElementById('is_active_info');
+        const hiddenInput = document.getElementById('is_active_form');
+        
+        if (infoCheckbox && hiddenInput) {
+            // Update hidden input value based on checkbox state
+            hiddenInput.value = infoCheckbox.checked ? '1' : '0';
+            console.log('Syncing checkbox: is_active =', infoCheckbox.checked, 'value =', hiddenInput.value);
+        } else {
+            console.warn('Checkbox elements not found, continuing with form submission');
+        }
+    } catch (error) {
+        console.error('Error syncing checkbox:', error);
+    }
+    // Always return true to allow form submission
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const infoCheckbox = document.getElementById('is_active_info');
+    const hiddenInput = document.getElementById('is_active_form');
+    const statusBadge = document.getElementById('status_badge');
+    const form = document.getElementById('editHostForm');
+    
+    // Add form submit listener
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            console.log('Form method:', form.method);
+            console.log('Form action:', form.action);
+            console.log('Form name field:', form.querySelector('input[name="name"]')?.value);
+            console.log('Form is_active field:', document.getElementById('is_active_form')?.value);
+            
+            syncActiveCheckbox();
+            
+            const formData = new FormData(form);
+            console.log('Form data entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: ${value}`);
+            }
+            
+            // Don't prevent default - let form submit normally
+            console.log('Allowing form submission...');
+        }, false); // Use capture phase to ensure it runs
+    } else {
+        console.error('Form editHostForm not found!');
+    }
+    
+    // Also try to catch submit via onclick on button
+    const saveButton = form?.querySelector('button[type="submit"]');
+    if (saveButton) {
+        saveButton.addEventListener('click', function(e) {
+            console.log('Save button click event (not onclick)');
+            // Don't prevent default - let form submit
+        });
+    }
+    
+    if (infoCheckbox && hiddenInput) {
+        // Sync initial state
+        hiddenInput.value = infoCheckbox.checked ? '1' : '0';
+        
+        infoCheckbox.addEventListener('change', function() {
+            const hiddenInput = document.getElementById('is_active_form');
+            
+            // Update badge
+            if (statusBadge) {
+                if (infoCheckbox.checked) {
+                    statusBadge.className = 'badge badge-success';
+                    statusBadge.textContent = 'Active';
+                } else {
+                    statusBadge.className = 'badge badge-danger';
+                    statusBadge.textContent = 'Inactive';
+                }
+            }
+            
+            // Sync with hidden input
+            if (hiddenInput) {
+                hiddenInput.value = infoCheckbox.checked ? '1' : '0';
+            }
+        });
+    }
+});
+
+// Get CSRF token helper function
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// IP management functions
+function showAddIpForm() {
+    document.getElementById('add-ip-form').style.display = 'block';
+    document.getElementById('new-ip-input').focus();
+    document.getElementById('add-ip-error').style.display = 'none';
+}
+
+function hideAddIpForm() {
+    document.getElementById('add-ip-form').style.display = 'none';
+    document.getElementById('new-ip-input').value = '';
+    document.getElementById('add-ip-error').style.display = 'none';
+}
+
+function addIp() {
+    const ipInput = document.getElementById('new-ip-input');
+    const ipAddress = ipInput.value.trim();
+    const errorDiv = document.getElementById('add-ip-error');
+    
+    // Basic IP validation
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipAddress || !ipRegex.test(ipAddress)) {
+        errorDiv.textContent = 'Please enter a valid IP address (e.g., 192.168.1.100)';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Disable button during request
+    const addBtn = event.target;
+    const originalText = addBtn.textContent;
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding...';
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'add_host_ip' host.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ ip: ipAddress })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to show new IP
+            window.location.reload();
+        } else {
+            errorDiv.textContent = data.error || 'Failed to add IP address';
+            errorDiv.style.display = 'block';
+            addBtn.disabled = false;
+            addBtn.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Error: ' + error.message;
+        errorDiv.style.display = 'block';
+        addBtn.disabled = false;
+        addBtn.textContent = originalText;
+    });
+}
+
+function deleteIp(ipId, ipAddress) {
+    showConfirmModal({
+        title: 'Delete IP address',
+        message: 'Are you sure you want to delete IP address ' + ipAddress + '?',
+        danger: true,
+        confirmLabel: 'Delete', onConfirm: function() { doDeleteIp(ipId, ipAddress); }
+    });
+}
+
+function doDeleteIp(ipId, ipAddress) {
+    const ipItem = document.getElementById('ip-item-' + ipId);
+    if (ipItem) {
+        ipItem.style.opacity = '0.5';
+        ipItem.style.pointerEvents = 'none';
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'delete_host_ip' host.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ ip_id: ipId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove IP from list
+            if (ipItem) {
+                ipItem.remove();
+            }
+            // If no IPs left, show message
+            const ipList = document.getElementById('ip-addresses-list');
+            if (ipList && ipList.querySelectorAll('[id^="ip-item-"]').length === 0) {
+                ipList.innerHTML = '<p style="color: #b0b0b0; text-align: center; padding: 20px;">No IP addresses</p>';
+            }
+        } else {
+            showAlertModal({ title: 'Error', message: data.error || 'Failed to delete IP address' });
+            if (ipItem) {
+                ipItem.style.opacity = '1';
+                ipItem.style.pointerEvents = 'auto';
+            }
+        }
+    })
+    .catch(error => {
+        showAlertModal({ title: 'Error', message: 'Error: ' + error.message });
+        if (ipItem) {
+            ipItem.style.opacity = '1';
+            ipItem.style.pointerEvents = 'auto';
+        }
+    });
+}
+
+// Allow Enter key to submit IP form
+document.addEventListener('DOMContentLoaded', function() {
+    const ipInput = document.getElementById('new-ip-input');
+    if (ipInput) {
+        ipInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addIp();
+            }
+        });
+    }
+    
+    const hostnameInput = document.getElementById('new-hostname-input');
+    if (hostnameInput) {
+        hostnameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addHostname();
+            }
+        });
+    }
+});
+
+// Hostname management functions
+function showAddHostnameForm() {
+    document.getElementById('add-hostname-form').style.display = 'block';
+    document.getElementById('new-hostname-input').focus();
+    document.getElementById('add-hostname-error').style.display = 'none';
+}
+
+function hideAddHostnameForm() {
+    document.getElementById('add-hostname-form').style.display = 'none';
+    document.getElementById('new-hostname-input').value = '';
+    document.getElementById('add-hostname-error').style.display = 'none';
+}
+
+function addHostname() {
+    const hostnameInput = document.getElementById('new-hostname-input');
+    const hostnameName = hostnameInput.value.trim();
+    const sourceType = document.getElementById('new-hostname-source').value;
+    const errorDiv = document.getElementById('add-hostname-error');
+    
+    // Basic hostname validation
+    if (!hostnameName || hostnameName.length < 1) {
+        errorDiv.textContent = 'Please enter a hostname';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    // Disable button during request
+    const addBtn = event.target;
+    const originalText = addBtn.textContent;
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding...';
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'add_host_hostname' host.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ hostname: hostnameName, source_type: sourceType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to show new hostname
+            window.location.reload();
+        } else {
+            errorDiv.textContent = data.error || 'Failed to add hostname';
+            errorDiv.style.display = 'block';
+            addBtn.disabled = false;
+            addBtn.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Error: ' + error.message;
+        errorDiv.style.display = 'block';
+        addBtn.disabled = false;
+        addBtn.textContent = originalText;
+    });
+}
+
+function deleteHostname(hostnameId, hostnameName) {
+    showConfirmModal({
+        title: 'Delete hostname',
+        message: 'Are you sure you want to delete hostname ' + hostnameName + '?',
+        danger: true,
+        confirmLabel: 'Delete', onConfirm: function() { doDeleteHostname(hostnameId, hostnameName); }
+    });
+}
+
+function doDeleteHostname(hostnameId, hostnameName) {
+    const hostnameItem = document.getElementById('hostname-item-' + hostnameId);
+    if (hostnameItem) {
+        hostnameItem.style.opacity = '0.5';
+        hostnameItem.style.pointerEvents = 'none';
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`{% url 'delete_host_hostname' host.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ hostname_id: hostnameId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove hostname from list
+            if (hostnameItem) {
+                hostnameItem.remove();
+            }
+            // If no hostnames left, show message
+            const hostnameList = document.getElementById('hostnames-list');
+            if (hostnameList && hostnameList.querySelectorAll('[id^="hostname-item-"]').length === 0) {
+                hostnameList.innerHTML = '<p style="color: #b0b0b0; text-align: center; padding: 20px;">No hostnames discovered yet</p>';
+            }
+        } else {
+            showAlertModal({ title: 'Error', message: data.error || 'Failed to delete hostname' });
+            if (hostnameItem) {
+                hostnameItem.style.opacity = '1';
+                hostnameItem.style.pointerEvents = 'auto';
+            }
+        }
+    })
+    .catch(error => {
+        showAlertModal({ title: 'Error', message: 'Error: ' + error.message });
+        if (hostnameItem) {
+            hostnameItem.style.opacity = '1';
+            hostnameItem.style.pointerEvents = 'auto';
+        }
+    });
+}
+
+let currentEventSource = null;
+
+function toggleScanMenu(ipAddress) {
+    // Close all other menus
+    document.querySelectorAll('.scan-menu').forEach(menu => {
+        if (menu.id !== 'scanMenu-' + ipAddress) {
+            menu.style.display = 'none';
+        }
+    });
+    
+    // Toggle current menu
+    const menu = document.getElementById('scanMenu-' + ipAddress);
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// Close scan menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.scan-menu') && !event.target.closest('button[onclick*="toggleScanMenu"]')) {
+        document.querySelectorAll('.scan-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+});
+
+function startScan(ipAddress, scanType = 'complete') {
+    // Close scan menu
+    document.querySelectorAll('.scan-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    
+    const modal = document.getElementById('scanModal');
+    const output = document.getElementById('scanOutput');
+    const closeBtn = document.getElementById('closeScanBtn');
+    
+    modal.style.display = 'flex';
+    
+    // Show scan type description
+    const scanDescriptions = {
+        'quick': '⚡ Quick Scan (Fast, Top 100 ports, OS detection)',
+        'quick_plus': '⚡ Quick Scan Plus (Fast, Top 100 ports, OS + Version detection)',
+        'intense': '🔥 Intense Scan (Aggressive, OS + Version + Scripts)',
+        'discover_hostname': '🌐 Discover Hostname (DNS, NetBIOS, SSL, HTTP hostname discovery)',
+        'complete': '🎯 Complete Scan (All ports, Maximum information gathering)'
+    };
+    
+    output.innerHTML = '<div style="color: #6bb6ff;">Starting ' + (scanDescriptions[scanType] || scanDescriptions['complete']) + ' for ' + ipAddress + '...</div>';
+    closeBtn.style.display = 'none';
+    
+    if (currentEventSource) {
+        if (currentEventSource.close) {
+            currentEventSource.close();
+        } else if (currentEventSource.abort) {
+            currentEventSource.abort();
+        }
+    }
+    
+    let buffer = '';
+    const url = '{% url "scan_host_ip" host.id "PLACEHOLDER" %}'.replace('PLACEHOLDER', ipAddress) + '?scan_type=' + scanType;
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'text/event-stream',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        currentEventSource = { abort: () => reader.cancel() };
+        
+        function readStream() {
+            reader.read().then(({ done, value }) => {
+                if (done) {
+                    if (buffer.trim()) {
+                        processBuffer();
+                    }
+                    if (closeBtn.style.display === 'none') {
+                        closeBtn.style.display = 'inline-block';
+                    }
+                    currentEventSource = null;
+                    return;
+                }
+                
+                buffer += decoder.decode(value, { stream: true });
+                processBuffer();
+                readStream();
+            }).catch(err => {
+                addOutputLine(`Error reading stream: ${err.message}`, 'error');
+                closeBtn.style.display = 'inline-block';
+                currentEventSource = null;
+            });
+        }
+        
+        function processBuffer() {
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+                if (line.trim() && line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.substring(6));
+                        
+                        if (data.type === 'start') {
+                            addOutputLine(data.message, 'info');
+                        } else if (data.type === 'output') {
+                            addOutputLine(data.line, 'info');
+                        } else if (data.type === 'success') {
+                            addOutputLine(data.message, 'success');
+                            addOutputLine('Scan completed successfully', 'success');
+                            closeBtn.style.display = 'inline-block';
+                        } else if (data.type === 'error') {
+                            addOutputLine('ERROR: ' + data.message, 'error');
+                            closeBtn.style.display = 'inline-block';
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE data:', e, line);
+                    }
+                }
+            }
+        }
+        
+        readStream();
+    })
+    .catch(err => {
+        addOutputLine(`Error starting scan: ${err.message}`, 'error');
+        closeBtn.style.display = 'inline-block';
+        currentEventSource = null;
+    });
+}
+
+function addOutputLine(text, type) {
+    const output = document.getElementById('scanOutput');
+    const line = document.createElement('div');
+    const colors = {
+        'info': '#6bb6ff',
+        'success': '#90ee90',
+        'error': '#ff6b6b',
+        'warning': '#ffd700'
+    };
+    line.style.cssText = `margin-bottom: 5px; color: ${colors[type] || colors.info};`;
+    line.textContent = text;
+    output.appendChild(line);
+    output.scrollTop = output.scrollHeight;
+}
+
+function closeScanModal() {
+    const modal = document.getElementById('scanModal');
+    modal.style.display = 'none';
+    
+    if (currentEventSource) {
+        if (currentEventSource.close) {
+            currentEventSource.close();
+        } else if (currentEventSource.abort) {
+            currentEventSource.abort();
+        }
+        currentEventSource = null;
+    }
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.style.display = 'none';
+}
+
+// Check if we should show success modal
+(function() {
+    function showSuccessModal() {
+        const modal = document.getElementById('successModal');
+        if (modal) {
+            console.log('Showing success modal');
+            modal.style.display = 'flex';
+            // Clean URL
+            const url = new URL(window.location);
+            url.searchParams.delete('saved');
+            window.history.replaceState({}, document.title, url.pathname + url.search);
+        } else {
+            console.error('Success modal not found');
+        }
+    }
+    
+    // Check URL parameter first
+    const urlParams = new URLSearchParams(window.location.search);
+    const saved = urlParams.get('saved');
+    
+    if (saved === '1') {
+        setTimeout(showSuccessModal, 200);
+        return;
+    }
+    
+    // Also check Django messages
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                setTimeout(showSuccessModal, 200);
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+})();
+</script>
+{% endblock %}

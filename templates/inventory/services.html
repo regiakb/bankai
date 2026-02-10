@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Services - BANKAI{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Network Services</h2>
+        <a href="{% url 'export_services_csv' %}" class="btn btn-primary">Export CSV</a>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <input type="text" placeholder="Search by host, service, port..." value="{{ search }}" id="search-input" onkeyup="updateSearch()">
+        </div>
+    </div>
+    
+    {% if services %}
+    <table>
+        <thead>
+            <tr>
+                <th>Host</th>
+                <th>Port</th>
+                <th>Protocol</th>
+                <th>Name</th>
+                <th>Product</th>
+                <th>Version</th>
+                <th>Extra Info</th>
+                <th>Last Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service in services %}
+            <tr>
+                <td><strong>{{ service.host.name }}</strong></td>
+                <td><code>{{ service.port }}</code></td>
+                <td><span class="badge badge-info">{{ service.proto|upper }}</span></td>
+                <td>{{ service.name|default:"—" }}</td>
+                <td>{{ service.product|default:"—" }}</td>
+                <td>{{ service.version|default:"—" }}</td>
+                <td>{{ service.extra_info|default:"—" }}</td>
+                <td>{% timezone "Europe/Madrid" %}{{ service.last_seen|date:"Y-m-d H:i" }}{% endtimezone %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No services found</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateSearch() {
+    const search = document.getElementById('search-input').value;
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    window.location.href = '{% url "services" %}?' + params.toString();
+}
+</script>
+{% endblock %}

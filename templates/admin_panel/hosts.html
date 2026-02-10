@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Hosts - Admin Panel{% endblock %}
+{% block page_title %}Hosts{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-header">
+        <div class="admin-filters">
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search by name, MAC, vendor..." value="{{ search }}" class="filter-input">
+                <select name="status" class="filter-select">
+                    <option value="">All</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                <select name="source" class="filter-select">
+                    <option value="">All sources</option>
+                    {% for value, label in source_choices %}
+                    <option value="{{ value }}" {% if source_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="{% url 'admin_hosts' %}" class="btn-clear">Clear</a>
+            </form>
+        </div>
+    </div>
+    
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>MAC</th>
+                    <th>Vendor</th>
+                    <th>Type</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Last seen</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for host in hosts %}
+                <tr>
+                    <td><strong>{{ host.name }}</strong></td>
+                    <td>{{ host.mac|default:"-" }}</td>
+                    <td>{{ host.vendor|default:"-" }}</td>
+                    <td>{{ host.get_device_type_display|default:"-" }}</td>
+                    <td>{{ host.get_source_display }}</td>
+                    <td>
+                        <span class="badge badge-{% if host.is_active %}success{% else %}danger{% endif %}">
+                            {% if host.is_active %}Activo{% else %}Inactivo{% endif %}
+                        </span>
+                    </td>
+                    <td>{% timezone "Europe/Madrid" %}{{ host.last_seen|date:"d/m/Y H:i" }}{% endtimezone %}</td>
+                    <td>
+                        <a href="{% url 'admin_host_detail' host.id %}" class="btn-action btn-view">View/Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="empty-state">No hosts</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if hosts.has_other_pages %}
+    <div class="admin-pagination">
+        {% if hosts.has_previous %}
+        <a href="?page={{ hosts.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if source_filter %}&source={{ source_filter }}{% endif %}" class="pagination-link">← Previous</a>
+        {% endif %}
+        <span class="pagination-info">Page {{ hosts.number }} de {{ hosts.paginator.num_pages }}</span>
+        {% if hosts.has_next %}
+        <a href="?page={{ hosts.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if source_filter %}&source={{ source_filter }}{% endif %}" class="pagination-link">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

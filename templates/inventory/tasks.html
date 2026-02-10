@@ -1,0 +1,709 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}Tasks - BANKAI{% endblock %}
+
+{% block page_title %}Task Runner{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+    <h3>📅 Scheduler Status</h3>
+    <p style="color: #b0b0b0; margin-bottom: 20px;">Automated task execution status</p>
+    
+    <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="font-weight: 600; margin-bottom: 10px; color: #e0e0e0;">🔍 Discovery Scan</div>
+            <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">Interval: {{ discovery_interval }} min (at :00)</div>
+            {% if last_discovery %}
+                <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">
+                    Last: {% timezone "Europe/Madrid" %}{{ last_discovery.started_at|date:"H:i:s" }}{% endtimezone %}
+                    {% if last_discovery.status == 'running' %}
+                        <span style="color: #ffd700;">⏳ Running</span>
+                    {% elif last_discovery.status == 'success' %}
+                        <span style="color: #90ee90;">✓ Success</span>
+                    {% else %}
+                        <span style="color: #ff6b6b;">✗ Error</span>
+                    {% endif %}
+                </div>
+                {% if next_discovery %}
+                    <div style="font-size: 12px; color: #6bb6ff;">
+                        Next: {% timezone "Europe/Madrid" %}{{ next_discovery|date:"H:i:s" }}{% endtimezone %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="font-size: 12px; color: #9ca3af;">Never executed</div>
+            {% endif %}
+        </div>
+        
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="font-weight: 600; margin-bottom: 10px; color: #e0e0e0;">🔌 Service Scan</div>
+            <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">Interval: {{ service_interval }} min (at :20)</div>
+            {% if last_services %}
+                <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">
+                    Last: {% timezone "Europe/Madrid" %}{{ last_services.started_at|date:"H:i:s" }}{% endtimezone %}
+                    {% if last_services.status == 'running' %}
+                        <span style="color: #ffd700;">⏳ Running</span>
+                    {% elif last_services.status == 'success' %}
+                        <span style="color: #90ee90;">✓ Success</span>
+                    {% else %}
+                        <span style="color: #ff6b6b;">✗ Error</span>
+                    {% endif %}
+                </div>
+                {% if next_services %}
+                    <div style="font-size: 12px; color: #6bb6ff;">
+                        Next: {% timezone "Europe/Madrid" %}{{ next_services|date:"H:i:s" }}{% endtimezone %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="font-size: 12px; color: #9ca3af;">Never executed</div>
+            {% endif %}
+        </div>
+        
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="font-weight: 600; margin-bottom: 10px; color: #e0e0e0; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#E57000"/>
+                    <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#E57000"/>
+                    <path d="M2 12L12 17L22 12V7L12 12L2 7V12Z" fill="#FF8C00"/>
+                </svg>
+                Proxmox Sync
+            </div>
+            <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">Interval: {{ proxmox_interval }} min (at :40)</div>
+            {% if last_proxmox %}
+                <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">
+                    Last: {% timezone "Europe/Madrid" %}{{ last_proxmox.started_at|date:"H:i:s" }}{% endtimezone %}
+                    {% if last_proxmox.status == 'running' %}
+                        <span style="color: #ffd700;">⏳ Running</span>
+                    {% elif last_proxmox.status == 'success' %}
+                        <span style="color: #90ee90;">✓ Success</span>
+                    {% else %}
+                        <span style="color: #ff6b6b;">✗ Error</span>
+                    {% endif %}
+                </div>
+                {% if next_proxmox %}
+                    <div style="font-size: 12px; color: #6bb6ff;">
+                        Next: {% timezone "Europe/Madrid" %}{{ next_proxmox|date:"H:i:s" }}{% endtimezone %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="font-size: 12px; color: #9ca3af;">Never executed</div>
+            {% endif %}
+        </div>
+        
+        <div style="padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="font-weight: 600; margin-bottom: 10px; color: #e0e0e0; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#68BC00"/>
+                    <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#68BC00"/>
+                    <circle cx="12" cy="9.5" r="2" fill="#FFFFFF"/>
+                </svg>
+                AdGuard Home Sync
+            </div>
+            <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">Interval: {{ adguard_interval }} min (at :50)</div>
+            {% if last_adguard %}
+                <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 5px;">
+                    Last: {% timezone "Europe/Madrid" %}{{ last_adguard.started_at|date:"H:i:s" }}{% endtimezone %}
+                    {% if last_adguard.status == 'running' %}
+                        <span style="color: #ffd700;">⏳ Running</span>
+                    {% elif last_adguard.status == 'success' %}
+                        <span style="color: #90ee90;">✓ Success</span>
+                    {% else %}
+                        <span style="color: #ff6b6b;">✗ Error</span>
+                    {% endif %}
+                </div>
+                {% if next_adguard %}
+                    <div style="font-size: 12px; color: #6bb6ff;">
+                        Next: {% timezone "Europe/Madrid" %}{{ next_adguard|date:"H:i:s" }}{% endtimezone %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="font-size: 12px; color: #9ca3af;">Never executed</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if running_tasks %}
+    <div style="padding: 10px; background: #2d1e0f; border-radius: 4px; border: 1px solid #ffd700; margin-bottom: 15px;">
+        <div style="color: #ffd700; font-weight: 600; margin-bottom: 5px;">⏳ Tasks Currently Running:</div>
+        {% for task in running_tasks %}
+            <div style="font-size: 12px; color: #ffd700; margin-left: 20px;">
+                • {{ task.get_task_name_display }} (started {{ task.started_at|timesince }} ago)
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <details style="margin-top: 15px;" open>
+        <summary style="cursor: pointer; color: #6bb6ff; font-weight: 600; margin-bottom: 10px;">📋 All Executions (scroll down to load more)</summary>
+        <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b0b0b0;">
+                Task type:
+                <select id="taskExecutionsFilterTask" style="padding: 6px 10px; background: #252525; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 12px;">
+                    <option value="">All</option>
+                    {% for value, label in task_choices %}
+                    <option value="{{ value }}" {% if filter_task_name == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b0b0b0;">
+                Status:
+                <select id="taskExecutionsFilterStatus" style="padding: 6px 10px; background: #252525; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 12px;">
+                    <option value="">All</option>
+                    <option value="running" {% if filter_status == 'running' %}selected{% endif %}>Pending (running)</option>
+                    <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </label>
+        </div>
+        <div id="taskExecutionsScroll" style="margin-top: 10px; max-height: 400px; overflow-y: auto;"
+             data-offset="{{ recent_executions|length }}"
+             data-page-size="{{ executions_page_size }}"
+             data-delete-url="{% url 'delete_task_execution' 0 %}"
+             data-csrf="{{ csrf_token }}"
+             data-api-url="{% url 'task_executions_api' %}">
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #404040;">
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Task</th>
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Status</th>
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Started</th>
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Duration</th>
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Items</th>
+                        <th style="text-align: left; padding: 8px; color: #b0b0b0;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="taskExecutionsBody">
+                    {% for item in recent_executions %}
+                    <tr style="border-bottom: 1px solid #2a2a2a;">
+                        <td style="padding: 8px; color: #e0e0e0;">{{ item.exec.get_task_name_display }}</td>
+                        <td style="padding: 8px;">
+                            {% if item.exec.status == 'running' %}
+                                <span style="color: #ffd700;">⏳ Running</span>
+                            {% elif item.exec.status == 'success' %}
+                                <span style="color: #90ee90;">✓ Success</span>
+                            {% else %}
+                                <span style="color: #ff6b6b;">✗ Error</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 8px; color: #b0b0b0;">{% timezone "Europe/Madrid" %}{{ item.exec.started_at|date:"H:i:s" }}{% endtimezone %}</td>
+                        <td style="padding: 8px; color: #b0b0b0;">
+                            {% if item.duration %}
+                                {{ item.duration }}
+                            {% elif item.exec.status == 'running' %}
+                                <span style="color: #ffd700;">Running...</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td style="padding: 8px; color: #b0b0b0;">{{ item.exec.items_processed }}</td>
+                        <td style="padding: 8px;">
+                            <div class="action-buttons">
+                                <form method="post" action="{% url 'delete_task_execution' item.exec.id %}" style="display: inline;" onsubmit="event.preventDefault(); var f = this; showConfirmModal({ title: 'Delete task execution', message: 'Delete this task execution?', danger: true, confirmLabel: 'Delete', onConfirm: function() { f.submit(); } }); return false;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-action-delete">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="taskExecutionsEmptyRow">
+                        <td colspan="6" style="padding: 8px; color: #9ca3af; text-align: center;">No executions yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div id="taskExecutionsLoading" style="display: none; padding: 12px; text-align: center; color: #6bb6ff; font-size: 12px;">Loading more...</div>
+            <div id="taskExecutionsNoMore" style="display: none; padding: 8px; text-align: center; color: #b0b0b0; font-size: 12px;">No more executions</div>
+        </div>
+    </details>
+</div>
+
+<div class="card">
+    <h3>Task Runner</h3>
+    <p style="color: #b0b0b0; margin-bottom: 20px;">Execute management commands and view output in real-time</p>
+    
+    <div class="grid" style="margin-bottom: 20px;">
+        <div class="card" style="text-align: center; cursor: pointer;" onclick="runCommand('scan_discovery')" id="btn-scan_discovery">
+            <div style="font-size: 36px; margin-bottom: 10px;">🔍</div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Discovery Scan</div>
+            <div style="font-size: 12px; color: #b0b0b0;">Find Hosts & IPs</div>
+        </div>
+        
+        <div class="card" style="text-align: center; cursor: pointer;" onclick="runCommand('scan_services')" id="btn-scan_services">
+            <div style="font-size: 36px; margin-bottom: 10px;">🔌</div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Service Scan</div>
+            <div style="font-size: 12px; color: #b0b0b0;">Find Open Ports</div>
+        </div>
+        
+        <div class="card" style="text-align: center; cursor: pointer;" onclick="runCommand('sync_proxmox')" id="btn-sync_proxmox">
+            <div style="margin-bottom: 10px; display: flex; justify-content: center; align-items: center; height: 57px;">
+                <svg width="57" height="57" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#E57000"/>
+                    <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#E57000"/>
+                    <path d="M2 12L12 17L22 12V7L12 12L2 7V12Z" fill="#FF8C00"/>
+                </svg>
+            </div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Sync Proxmox</div>
+            <div style="font-size: 12px; color: #b0b0b0;">Import VMs/LXC</div>
+        </div>
+        
+        <div class="card" style="text-align: center; cursor: pointer;" onclick="runCommand('sync_adguard')" id="btn-sync_adguard">
+            <div style="margin-bottom: 10px; display: flex; justify-content: center; align-items: center; height: 57px;">
+                <svg width="57" height="57" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#68BC00"/>
+                    <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#68BC00"/>
+                    <path d="M12 6L6 9L12 12L18 9L12 6Z" fill="#FFFFFF" opacity="0.3"/>
+                </svg>
+            </div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Sync AdGuard</div>
+            <div style="font-size: 12px; color: #b0b0b0;">Sync Hosts to AdGuard</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="statusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: #9ca3af; display: inline-block;"></span>
+                <span id="statusText">Ready</span>
+            </div>
+            <button onclick="clearOutput()" class="btn btn-secondary" style="padding: 5px 15px;">Clear Output</button>
+        </div>
+        
+        <div id="progressContainer" style="display: none; margin-bottom: 20px; padding: 15px; background: #252525; border-radius: 4px; border: 1px solid #404040;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div>
+                    <strong id="progressText" style="color: #e0e0e0;">Processing...</strong>
+                    <div style="font-size: 12px; color: #b0b0b0; margin-top: 5px;" id="progressDetails"></div>
+                </div>
+                <div style="font-size: 14px; color: #b0b0b0;" id="elapsedTime">00:00</div>
+            </div>
+            <div style="width: 100%; height: 8px; background: #404040; border-radius: 4px; overflow: hidden;">
+                <div id="progressFill" style="height: 100%; background: #c41e3a; transition: width 0.3s; width: 0%;"></div>
+            </div>
+        </div>
+        
+        <div id="outputContainer" style="background: #1a1a1a; padding: 15px; border-radius: 4px; min-height: 400px; max-height: 600px; overflow-y: auto; font-family: monospace; font-size: 12px; border: 1px solid #404040;">
+            <div style="color: #6bb6ff;">Ready to execute commands. Click a button above to start.</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.status-idle { background: #9ca3af !important; }
+.status-running { background: #3b82f6 !important; animation: pulse 1s infinite; }
+.status-success { background: #10b981 !important; }
+.status-error { background: #ef4444 !important; }
+
+.output-line {
+    margin: 2px 0;
+    padding: 2px 0;
+    word-wrap: break-word;
+}
+.output-line.info { color: #6bb6ff; }
+.output-line.success { color: #90ee90; }
+.output-line.error { color: #ff6b6b; }
+.output-line.warning { color: #ffd700; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+</style>
+
+<script>
+let currentEventSource = null;
+let isRunning = false;
+let startTime = null;
+let progressInterval = null;
+
+function addOutputLine(text, type = 'info') {
+    const container = document.getElementById('outputContainer');
+    const line = document.createElement('div');
+    line.className = `output-line ${type}`;
+    line.textContent = text;
+    container.appendChild(line);
+    container.scrollTop = container.scrollHeight;
+}
+
+function clearOutput() {
+    if (isRunning) {
+        showConfirmModal({
+            title: 'Clear output',
+            message: 'A command is currently running. Stop it and clear output?',
+            danger: false,
+            confirmLabel: 'Stop and clear',
+            onConfirm: function() {
+                stopCommand();
+                document.getElementById('outputContainer').innerHTML = '';
+                updateStatus('idle', 'Ready');
+            }
+        });
+    } else {
+        document.getElementById('outputContainer').innerHTML = '';
+        addOutputLine('Output cleared.', 'info');
+    }
+}
+
+function updateStatus(status, text) {
+    const indicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    
+    indicator.className = `status-${status}`;
+    statusText.textContent = text;
+}
+
+function updateElapsedTime() {
+    if (!startTime) return;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    document.getElementById('elapsedTime').textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function stopCommand() {
+    if (currentEventSource) {
+        if (currentEventSource.close) {
+            currentEventSource.close();
+        } else if (currentEventSource.abort) {
+            currentEventSource.abort();
+        }
+    }
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    isRunning = false;
+    startTime = null;
+    updateStatus('idle', 'Stopped');
+    
+    document.getElementById('progressContainer').style.display = 'none';
+    
+    document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+    });
+}
+
+function runCommand(commandName) {
+    if (isRunning) {
+        showAlertModal({ title: 'Command running', message: 'A command is already running. Please wait for it to complete.' });
+        return;
+    }
+    
+    isRunning = true;
+    startTime = Date.now();
+    updateStatus('running', `Running: ${commandName}...`);
+    
+    document.getElementById('progressContainer').style.display = 'block';
+    document.getElementById('progressText').textContent = `Running: ${commandName}...`;
+    document.getElementById('progressDetails').textContent = 'Initializing...';
+    document.getElementById('progressFill').style.width = '10%';
+    
+    progressInterval = setInterval(updateElapsedTime, 1000);
+    
+    document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+    });
+    
+    document.getElementById('outputContainer').innerHTML = '';
+    addOutputLine(`Starting command: ${commandName}...`, 'info');
+    addOutputLine('─'.repeat(60), 'info');
+    
+    if (commandName === 'scan_services') {
+        addOutputLine('⚠️  Service scan can take 10-30 minutes depending on number of targets', 'warning');
+        addOutputLine('   Progress will be shown as nmap scans each target', 'info');
+    } else if (commandName === 'scan_discovery') {
+        addOutputLine('ℹ️  Discovery scan typically takes 2-5 minutes', 'info');
+    }
+    
+    let buffer = '';
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch('{% url "run_command" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ command: commandName })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        function readStream() {
+            reader.read().then(({ done, value }) => {
+                if (done) {
+                    if (buffer.trim()) {
+                        processBuffer();
+                    }
+                    if (isRunning) {
+                        stopCommand();
+                    }
+                    return;
+                }
+                
+                buffer += decoder.decode(value, { stream: true });
+                processBuffer();
+                readStream();
+            }).catch(err => {
+                addOutputLine(`Error reading stream: ${err.message}`, 'error');
+                stopCommand();
+            });
+        }
+        
+        function processBuffer() {
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+                if (line.trim() && line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.substring(6));
+                        
+                        if (data.type === 'start') {
+                            addOutputLine(`Command started: ${data.command}`, 'info');
+                            document.getElementById('progressFill').style.width = '20%';
+                        } else if (data.type === 'output') {
+                            addOutputLine(data.line, 'info');
+                            
+                            const lineLower = data.line.toLowerCase();
+                            
+                            if (lineLower.includes('[progress]') || lineLower.includes('stats:') || lineLower.includes('elapsed')) {
+                                const detail = data.line.replace('[Progress]', '').replace('[Info]', '').trim();
+                                document.getElementById('progressDetails').textContent = detail || 'Scanning...';
+                                const currentWidth = parseInt(document.getElementById('progressFill').style.width) || 20;
+                                if (currentWidth < 85) {
+                                    document.getElementById('progressFill').style.width = Math.min(currentWidth + 1, 85) + '%';
+                                }
+                            } else if (lineLower.includes('[scanning]')) {
+                                document.getElementById('progressDetails').textContent = data.line.replace('[Scanning]', '').trim();
+                                const currentWidth = parseInt(document.getElementById('progressFill').style.width) || 20;
+                                document.getElementById('progressFill').style.width = Math.min(currentWidth + 3, 85) + '%';
+                            } else if (lineLower.includes('target') || lineLower.includes('ips to scan')) {
+                                document.getElementById('progressDetails').textContent = data.line;
+                                document.getElementById('progressFill').style.width = '30%';
+                            } else if (lineLower.includes('starting nmap') || lineLower.includes('starting scan')) {
+                                document.getElementById('progressDetails').textContent = 'Initializing nmap scan...';
+                                document.getElementById('progressFill').style.width = '40%';
+                            } else if (lineLower.includes('parsing') || lineLower.includes('processing')) {
+                                document.getElementById('progressDetails').textContent = data.line;
+                                document.getElementById('progressFill').style.width = '80%';
+                            } else if (lineLower.includes('found') && (lineLower.includes('host') || lineLower.includes('service'))) {
+                                document.getElementById('progressDetails').textContent = data.line;
+                                document.getElementById('progressFill').style.width = '85%';
+                            } else if (lineLower.includes('complete') || lineLower.includes('synced') || lineLower.includes('finished')) {
+                                document.getElementById('progressFill').style.width = '95%';
+                            }
+                        } else if (data.type === 'success') {
+                            addOutputLine('─'.repeat(60), 'success');
+                            addOutputLine(`✓ ${data.message}`, 'success');
+                            document.getElementById('progressFill').style.width = '100%';
+                            document.getElementById('progressDetails').textContent = 'Completed successfully';
+                            updateStatus('success', 'Completed');
+                            stopCommand();
+                        } else if (data.type === 'error') {
+                            addOutputLine('─'.repeat(60), 'error');
+                            addOutputLine(`✗ Error: ${data.message}`, 'error');
+                            document.getElementById('progressDetails').textContent = 'Failed';
+                            updateStatus('error', 'Failed');
+                            stopCommand();
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE data:', e, line);
+                    }
+                }
+            }
+        }
+        
+        readStream();
+    })
+    .catch(err => {
+        addOutputLine(`Error starting command: ${err.message}`, 'error');
+        stopCommand();
+    });
+}
+
+// Auto-refresh scheduler status every 30 seconds
+let schedulerRefreshInterval = null;
+
+function refreshSchedulerStatus() {
+    // Reload the page to get updated scheduler status
+    // In a real implementation, you could use an AJAX call to update just the scheduler section
+    if (!isRunning) {
+        location.reload();
+    }
+}
+
+// Infinite scroll for task executions
+(function() {
+    function getCookie(name) {
+        var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : '';
+    }
+    const scrollEl = document.getElementById('taskExecutionsScroll');
+    const bodyEl = document.getElementById('taskExecutionsBody');
+    const loadingEl = document.getElementById('taskExecutionsLoading');
+    const noMoreEl = document.getElementById('taskExecutionsNoMore');
+    const filterTaskSelect = document.getElementById('taskExecutionsFilterTask');
+    const filterStatusSelect = document.getElementById('taskExecutionsFilterStatus');
+    if (!scrollEl || !bodyEl) return;
+
+    let offset = parseInt(scrollEl.getAttribute('data-offset') || '0', 10);
+    const pageSize = parseInt(scrollEl.getAttribute('data-page-size') || '25', 10);
+    const deleteUrlTemplate = scrollEl.getAttribute('data-delete-url') || '';
+    const apiBaseUrl = scrollEl.getAttribute('data-api-url') || '{% url "task_executions_api" %}';
+    const csrfToken = scrollEl.getAttribute('data-csrf') || getCookie('csrftoken') || '';
+    let loading = false;
+    let hasMore = true;
+
+    function getFilterParams() {
+        var taskName = filterTaskSelect ? filterTaskSelect.value : '';
+        var status = filterStatusSelect ? filterStatusSelect.value : '';
+        return { taskName: taskName, status: status };
+    }
+
+    function buildApiUrl(off, limit) {
+        var params = getFilterParams();
+        var url = apiBaseUrl + '?offset=' + off + '&limit=' + limit;
+        if (params.taskName) url += '&task_name=' + encodeURIComponent(params.taskName);
+        if (params.status) url += '&status=' + encodeURIComponent(params.status);
+        return url;
+    }
+
+    function escapeHtml(s) {
+        if (s == null) return '—';
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function statusHtml(status) {
+        if (status === 'running') return '<span style="color: #ffd700;">⏳ Running</span>';
+        if (status === 'success') return '<span style="color: #90ee90;">✓ Success</span>';
+        return '<span style="color: #ff6b6b;">✗ Error</span>';
+    }
+
+    function durationHtml(exec) {
+        if (exec.status === 'running') return '<span style="color: #ffd700;">Running...</span>';
+        return escapeHtml(exec.duration);
+    }
+
+    function loadMore() {
+        if (loading || !hasMore) return;
+        loading = true;
+        loadingEl.style.display = 'block';
+        noMoreEl.style.display = 'none';
+
+        const url = buildApiUrl(offset, pageSize);
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                const emptyRow = document.getElementById('taskExecutionsEmptyRow');
+                data.executions.forEach(function(exec) {
+                    const deleteUrl = deleteUrlTemplate.replace(/\/0\//, '/' + exec.id + '/');
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid #2a2a2a';
+                    tr.innerHTML =
+                        '<td style="padding: 8px; color: #e0e0e0;">' + escapeHtml(exec.task_name_display) + '</td>' +
+                        '<td style="padding: 8px;">' + statusHtml(exec.status) + '</td>' +
+                        '<td style="padding: 8px; color: #b0b0b0;">' + escapeHtml(exec.started_at) + '</td>' +
+                        '<td style="padding: 8px; color: #b0b0b0;">' + durationHtml(exec) + '</td>' +
+                        '<td style="padding: 8px; color: #b0b0b0;">' + escapeHtml(exec.items_processed) + '</td>' +
+                        '<td style="padding: 8px;">' +
+                        '<div class="action-buttons">' +
+                        '<form method="post" action="' + escapeHtml(deleteUrl) + '" style="display: inline;" onsubmit="event.preventDefault(); var f=this; showConfirmModal({ title: \'Delete task execution\', message: \'Delete this task execution?\', danger: true, confirmLabel: \'Delete\', onConfirm: function(){ f.submit(); } }); return false;">' +
+                        '<input type="hidden" name="csrfmiddlewaretoken" value="' + escapeHtml(csrfToken) + '">' +
+                        '<button type="submit" class="btn-action-delete">Delete</button>' +
+                        '</form></div></td>';
+                    bodyEl.appendChild(tr);
+                });
+                if (emptyRow) {
+                    if (data.executions.length > 0) emptyRow.remove();
+                    else {
+                        emptyRow.innerHTML = '<td colspan="6" style="padding: 8px; color: #9ca3af; text-align: center;">No executions found</td>';
+                    }
+                }
+                offset += data.executions.length;
+                hasMore = data.has_more;
+                loadingEl.style.display = 'none';
+                if (!hasMore) noMoreEl.style.display = 'block';
+            })
+            .catch(function() {
+                loadingEl.style.display = 'none';
+                hasMore = false;
+                var emptyRow = document.getElementById('taskExecutionsEmptyRow');
+                if (emptyRow) emptyRow.innerHTML = '<td colspan="6" style="padding: 8px; color: #9ca3af; text-align: center;">No executions found</td>';
+            })
+            .finally(function() { loading = false; });
+    }
+
+    scrollEl.addEventListener('scroll', function() {
+        if (loading || !hasMore) return;
+        const scrollTop = scrollEl.scrollTop;
+        const clientHeight = scrollEl.clientHeight;
+        const scrollHeight = scrollEl.scrollHeight;
+        if (scrollTop + clientHeight >= scrollHeight - 80) loadMore();
+    });
+
+    function applyFilters() {
+        offset = 0;
+        hasMore = true;
+        noMoreEl.style.display = 'none';
+        bodyEl.innerHTML = '<tr id="taskExecutionsEmptyRow"><td colspan="6" style="padding: 8px; color: #9ca3af; text-align: center;">Loading...</td></tr>';
+        loadMore();
+    }
+
+    if (filterTaskSelect) filterTaskSelect.addEventListener('change', applyFilters);
+    if (filterStatusSelect) filterStatusSelect.addEventListener('change', applyFilters);
+})();
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Only refresh if no command is running
+    if (!isRunning) {
+        schedulerRefreshInterval = setInterval(refreshSchedulerStatus, 30000); // 30 seconds
+    }
+    
+    // Override runCommand to stop auto-refresh
+    const originalRunCommand = window.runCommand;
+    window.runCommand = function(commandName) {
+        if (schedulerRefreshInterval) {
+            clearInterval(schedulerRefreshInterval);
+            schedulerRefreshInterval = null;
+        }
+        originalRunCommand(commandName);
+    };
+    
+    // Override stopCommand to resume auto-refresh
+    const originalStopCommand = window.stopCommand;
+    window.stopCommand = function() {
+        originalStopCommand();
+        if (!schedulerRefreshInterval && !isRunning) {
+            schedulerRefreshInterval = setInterval(refreshSchedulerStatus, 30000);
+        }
+    };
+});
+</script>
+{% endblock %}

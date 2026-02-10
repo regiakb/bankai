@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Host - Admin Panel{% endblock %}
+{% block page_title %}Edit Host: {{ host.name }}{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="admin-breadcrumb">
+        <a href="{% url 'admin_hosts' %}">← Back to Hosts</a>
+        <span>/</span>
+        <a href="{% url 'admin_host_detail' host.id %}">{{ host.name }}</a>
+    </div>
+    
+    <div class="admin-form-container">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" value="{{ host.name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="mac">MAC Address</label>
+                <input type="text" id="mac" name="mac" value="{{ host.mac|default:'' }}" placeholder="00:00:00:00:00:00">
+            </div>
+            
+            <div class="form-group">
+                <label for="vendor">Vendor</label>
+                <input type="text" id="vendor" name="vendor" value="{{ host.vendor|default:'' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="device_type">Device Type</label>
+                <select id="device_type" name="device_type">
+                    <option value="">-</option>
+                    {% for value, label in device_types %}
+                    <option value="{{ value }}" {% if host.device_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" {% if host.is_active %}checked{% endif %}>
+                    Active host
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="4">{{ host.notes|default:'' }}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'admin_host_detail' host.id %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.admin-form-container {
+    max-width: 800px;
+    background: #252525;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="email"],
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.admin-form input[type="text"]:focus,
+.admin-form input[type="email"]:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 0 2px rgba(196, 30, 58, 0.2);
+}
+
+.admin-form input[type="checkbox"] {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.admin-form .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #404040;
+}
+
+.btn-secondary {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+    background: #505050;
+}
+</style>
+{% endblock %}
