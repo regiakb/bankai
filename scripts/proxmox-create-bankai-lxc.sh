@@ -42,11 +42,11 @@ case "$TEMPLATE" in
     # Look up in local:vztmpl (pveam list usually returns just the filename)
     TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
     if [ -z "$TPL_FILE" ]; then
-      # Auto-download: pveam available format is "section\ttemplate_name" (e.g. "system  debian-12-standard_12.12-1_amd64.tar.zst")
       echo "[*] No template found. Updating template list..."
       pveam update >/dev/null 2>&1 || true
-      for want in "debian-12-standard" "ubuntu-22.04-standard" "ubuntu-24.04-standard" "alpine-3"; do
-        TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep "^system" | grep -i "$want" | head -1 | awk '{print $2}')
+      # Parse pveam available: each line is "section  template_name" - get the filename (field ending in .tar.zst/.tar.gz/.tar.xz)
+      for want in "debian-12-standard" "ubuntu-22.04-standard" "ubuntu-24.04-standard"; do
+        TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep "system" | grep -i "$want" | head -1 | awk '{for(i=1;i<=NF;i++) if($i ~ /\.(tar\.zst|tar\.gz|tar\.xz)$/) {print $i; exit}}')
         if [ -n "$TPL_DOWNLOAD" ]; then
           echo "[*] Downloading $TPL_DOWNLOAD (this may take a few minutes)..."
           if pveam download local "$TPL_DOWNLOAD"; then
@@ -55,6 +55,16 @@ case "$TEMPLATE" in
           fi
         fi
       done
+      # Fallback: use exact template name from Proxmox list (debian-12-standard_12.12-1_amd64.tar.zst)
+      if [ -z "$TPL_FILE" ]; then
+        for exact in "debian-12-standard_12.12-1_amd64.tar.zst" "ubuntu-22.04-standard_22.04-1_amd64.tar.zst" "ubuntu-24.04-standard_24.04-2_amd64.tar.zst"; do
+          echo "[*] Downloading $exact (this may take a few minutes)..."
+          if pveam download local "$exact" 2>/dev/null; then
+            TPL_FILE="$exact"
+            break
+          fi
+        done
+      fi
     fi
     if [ -z "$TPL_FILE" ]; then
       echo "Error: no template found matching '$TEMPLATE' and no alternate could be downloaded."
