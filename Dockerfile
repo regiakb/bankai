@@ -22,8 +22,14 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy project files
 COPY . .
 
+# Entrypoint: run migrations/setup on every start so "docker run" works without extra steps
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Create directories for static files, media and logs
 RUN mkdir -p staticfiles media logs
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Note: Running as root for now to avoid permission issues with mounted volumes
 # In production, consider using a non-root user with proper volume permissions

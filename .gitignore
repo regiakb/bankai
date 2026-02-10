@@ -50,3 +50,6 @@ Thumbs.db
 
 # Nmap / scans
 *.gnmap
+
+# Test environment (first-time user experience)
+/test-data
