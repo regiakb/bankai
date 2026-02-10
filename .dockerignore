@@ -33,8 +33,9 @@ media/
 *.txt
 !requirements.txt
 
-# Scripts
+# Scripts (except entrypoint needed for image)
 *.sh
+!entrypoint.sh
 
 # Docker
 Dockerfile

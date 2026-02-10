@@ -1,0 +1,2 @@
+# Ensure shell script has LF so it runs in Linux/Docker
+entrypoint.sh text eol=lf

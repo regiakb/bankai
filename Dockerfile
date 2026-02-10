@@ -24,7 +24,7 @@ COPY . .
 
 # Entrypoint: run migrations/setup on every start so "docker run" works without extra steps
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Create directories for static files, media and logs
 RUN mkdir -p staticfiles media logs
