@@ -69,17 +69,16 @@ case "$TEMPLATE" in
     ;;
 esac
 
-# --- Resolve VMID: start at 110 (or VMID env), use next free if that one exists ---
+# --- Resolve VMID: start at 110 (or VMID env), use next free in the *cluster* ---
+# On a cluster, pct status / local configs only see the current node; use pct list + qm list to see all VMIDs.
 ORIG_VMID="$VMID"
-while true; do
-  if ! pct status "$VMID" 2>/dev/null && ! [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null && ! [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; then
-    break
-  fi
-  [ "$VMID" != "$ORIG_VMID" ] || echo "[*] VMID $VMID in use, trying next..."
+USED_VMIDS=$( ( pct list 2>/dev/null | awk 'NR>1 {print $1}'; qm list 2>/dev/null | awk 'NR>1 {print $1}' ) | sort -u )
+while echo "$USED_VMIDS" | grep -q "^${VMID}$"; do
+  [ "$VMID" != "$ORIG_VMID" ] || echo "[*] VMID $VMID in use (on this cluster), trying next..."
   VMID=$((VMID + 1))
   [ $VMID -gt 999 ] && { echo "Error: no free VMID (tried up to 999)."; exit 1; }
 done
-[ "$VMID" != "$ORIG_VMID" ] && echo "[*] Using VMID $VMID (first free)."
+[ "$VMID" != "$ORIG_VMID" ] && echo "[*] Using VMID $VMID (first free in cluster)."
 
 echo "[*] Creating LXC $VMID ($HOSTNAME) with template $TEMPLATE ..."
 pct create "$VMID" "$TEMPLATE" \
