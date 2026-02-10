@@ -41,5 +41,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
 
-# Default command (can be overridden in docker-compose)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "bankai.wsgi:application"]
+# Default CMD also runs migrate so "docker run" works even if entrypoint is missing (e.g. old image)
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py create_default_user 2>/dev/null || true && exec gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 --access-logfile - --error-logfile - bankai.wsgi:application"]

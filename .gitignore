@@ -32,6 +32,7 @@ db.sqlite3-journal
 /media
 /staticfiles
 /logs
+/data
 
 # Environment
 .env

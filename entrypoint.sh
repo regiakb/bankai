@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
-# Run migrations and initial setup so the app works after "docker run" or first start
+# Ensure database directory exists when using DATABASE_PATH (e.g. /app/data)
+if [ -n "$DATABASE_PATH" ]; then
+  mkdir -p "$(dirname "$DATABASE_PATH")"
+fi
+# Run migrations and initial setup so the app works on first start (no manual steps)
 python manage.py migrate --noinput
 python manage.py init_config 2>/dev/null || true
 python manage.py create_default_user 2>/dev/null || true

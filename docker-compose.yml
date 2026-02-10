@@ -10,21 +10,24 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Database mounted to persist data
-      - ./db.sqlite3:/app/db.sqlite3
-      - ./media:/app/media
-      - ./staticfiles:/app/staticfiles
-      - ./logs:/app/logs
+      # Mount a directory so the DB file is created inside it (avoids "unable to open" when db.sqlite3 doesn't exist on host)
+      - ./data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure-change-me-in-production
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,*
       - DOCKER_SOCKET=/var/run/docker.sock
+      - DATABASE_PATH=/app/data/db.sqlite3
+      - MEDIA_ROOT=/app/data/media
+      - STATIC_ROOT=/app/data/staticfiles
     command: >
-      sh -c "python manage.py run_telegram_bot &
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py create_default_user 2>/dev/null || true &&
+             python manage.py collectstatic --noinput 2>/dev/null || true &&
+             python manage.py run_telegram_bot &
              python manage.py scheduler &
-             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 1200 --access-logfile - --error-logfile - bankai.wsgi:application"
+             exec gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 1200 --access-logfile - --error-logfile - bankai.wsgi:application"
     restart: unless-stopped
     networks:
       - bankai-network

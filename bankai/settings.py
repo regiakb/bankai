@@ -66,11 +66,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bankai.wsgi.application'
 
-# Database
+# Database (DATABASE_PATH allows e.g. Docker to use a mounted dir and avoid "unable to open" when file doesn't exist yet)
+_db_path = os.getenv('DATABASE_PATH')
+if _db_path:
+    _db_name = Path(_db_path)
+else:
+    _db_name = BASE_DIR / 'db.sqlite3'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': _db_name,
     }
 }
 
@@ -98,11 +103,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = Path(os.getenv('STATIC_ROOT', str(BASE_DIR / 'staticfiles')))
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media')))
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
