@@ -69,20 +69,18 @@ case "$TEMPLATE" in
     ;;
 esac
 
-# --- Resolve VMID: use next free if default is taken ---
-if pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; then
-  if [ "${VMID}" = "110" ]; then
-    NEXT=$(pvesh get /cluster/nextid 2>/dev/null) || NEXT=111
-    VMID=$NEXT
-    while pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; do
-      VMID=$((VMID + 1))
-      [ $VMID -gt 999 ] && { echo "Error: no free VMID found."; exit 1; }
-    done
-    echo "[*] Default VMID 110 in use, using $VMID instead."
-  else
-    echo "Error: container $VMID already exists. Use another VMID."
-    exit 1
-  fi
+# --- Resolve VMID: if taken, use next available (so "VM already exists" never happens) ---
+_vmid_taken() {
+  pct status "$1" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${1}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${1}.conf" ] 2>/dev/null
+}
+if _vmid_taken "$VMID"; then
+  ORIG_VMID="$VMID"
+  VMID=$(pvesh get /cluster/nextid 2>/dev/null) || VMID=100
+  while _vmid_taken "$VMID"; do
+    VMID=$((VMID + 1))
+    [ $VMID -gt 999 ] && { echo "Error: no free VMID found (tried up to 999)."; exit 1; }
+  done
+  echo "[*] VMID $ORIG_VMID in use, using $VMID instead."
 fi
 
 echo "[*] Creating LXC $VMID ($HOSTNAME) with template $TEMPLATE ..."
