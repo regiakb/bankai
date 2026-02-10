@@ -67,9 +67,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bankai.wsgi.application'
 
 # Database (DATABASE_PATH allows e.g. Docker to use a mounted dir and avoid "unable to open" when file doesn't exist yet)
+# In Docker (BASE_DIR is /app) we always use /app/data/db.sqlite3 so no process uses /app/db.sqlite3 by mistake
 _db_path = os.getenv('DATABASE_PATH')
 if _db_path:
     _db_name = Path(_db_path)
+elif BASE_DIR == Path('/app'):
+    _db_name = Path('/app/data/db.sqlite3')
 else:
     _db_name = BASE_DIR / 'db.sqlite3'
 DATABASES = {
