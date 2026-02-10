@@ -1,2 +1,3 @@
-# Ensure shell script has LF so it runs in Linux/Docker
+# Ensure shell scripts have LF so they run on Linux/Proxmox
 entrypoint.sh text eol=lf
+scripts/*.sh text eol=lf

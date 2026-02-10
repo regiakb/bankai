@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Run on the Proxmox NODE (as root).
 # Creates an LXC, starts it, and installs Bankai inside.
@@ -25,7 +25,7 @@ BRIDGE="${BRIDGE:-vmbr0}"
 TEMPLATE="${TEMPLATE:-debian-12-standard}"
 
 # --- Check we are on Proxmox ---
-if ! command -v pct &>/dev/null; then
+if ! command -v pct >/dev/null 2>&1; then
   echo "Error: 'pct' not found. Run this script on a Proxmox node (as root)."
   exit 1
 fi
@@ -36,22 +36,25 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # --- Resolve template ---
-if [[ "$TEMPLATE" != *"/"* ]] && [[ "$TEMPLATE" != *":"* ]]; then
-  # Look up in local:vztmpl (pveam list usually returns just the filename)
-  TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
-  if [ -z "$TPL_FILE" ]; then
-    echo "Error: no template found matching '$TEMPLATE'."
-    echo "Available templates:"
-    pveam list local:vztmpl 2>/dev/null || true
-    echo ""
-    echo "Download Debian 12: pveam download node local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
-    exit 1
-  fi
-  TEMPLATE="local:vztmpl/${TPL_FILE}"
-fi
+case "$TEMPLATE" in
+  */*|*:*) ;;
+  *)
+    # Look up in local:vztmpl (pveam list usually returns just the filename)
+    TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
+    if [ -z "$TPL_FILE" ]; then
+      echo "Error: no template found matching '$TEMPLATE'."
+      echo "Available templates:"
+      pveam list local:vztmpl 2>/dev/null || true
+      echo ""
+      echo "Download Debian 12: pveam download node local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
+      exit 1
+    fi
+    TEMPLATE="local:vztmpl/${TPL_FILE}"
+    ;;
+esac
 
 # --- Check VMID does not already exist ---
-if pct status "$VMID" &>/dev/null; then
+if pct status "$VMID" >/dev/null 2>&1; then
   echo "Error: container $VMID already exists. Use another VMID: VMID=200 $0"
   exit 1
 fi
@@ -69,16 +72,18 @@ echo "[*] Starting container $VMID ..."
 pct start "$VMID"
 
 echo "[*] Waiting for network inside container..."
-for i in {1..30}; do
-  if pct exec "$VMID" -- ping -c 1 -W 2 8.8.8.8 &>/dev/null; then
+i=0
+while [ $i -lt 30 ]; do
+  if pct exec "$VMID" -- ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
     break
   fi
+  i=$((i + 1))
   sleep 2
 done
 sleep 2
 
 echo "[*] Installing Bankai inside LXC (may take a few minutes)..."
-pct exec "$VMID" -- bash -c "apt-get update -qq && apt-get install -y -qq git && git clone --depth 1 https://github.com/regiakb/bankai.git /opt/bankai && /opt/bankai/scripts/install-lxc.sh"
+pct exec "$VMID" -- sh -c "apt-get update -qq && apt-get install -y -qq git && git clone --depth 1 https://github.com/regiakb/bankai.git /opt/bankai && /opt/bankai/scripts/install-lxc.sh"
 
 CT_IP=$(pct exec "$VMID" -- hostname -I 2>/dev/null | awk '{print $1}')
 echo ""
@@ -91,7 +96,7 @@ echo "  User:         admin"
 echo "  Password:     bankai"
 echo ""
 echo "  Useful commands:"
-echo "    pct enter $VMID   — enter container"
-echo "    pct stop $VMID   — stop"
-echo "    pct start $VMID  — start"
+echo "    pct enter $VMID   - enter container"
+echo "    pct stop $VMID    - stop"
+echo "    pct start $VMID   - start"
 echo "=============================================="
