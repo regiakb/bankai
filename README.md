@@ -82,6 +82,13 @@ python manage.py create_default_user
 python manage.py runserver
 ```
 
+## Default credentials
+
+```bash
+user: admin
+password: bankai
+```
+
 ## Project structure
 
 - `bankai/` — Django config (settings, urls, wsgi)
@@ -92,4 +99,5 @@ python manage.py runserver
 ## License
 
 See License.md
+
 
