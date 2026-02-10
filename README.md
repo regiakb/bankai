@@ -90,7 +90,7 @@ python manage.py runserver
 **From the Proxmox node** (creates the LXC and installs Bankai inside):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/regiakb/bankai/main/scripts/proxmox-create-bankai-lxc.sh -o /tmp/proxmox-create-bankai-lxc.sh && chmod +x /tmp/proxmox-create-bankai-lxc.sh && /tmp/proxmox-create-bankai-lxc.sh
+curl -sSL "https://raw.githubusercontent.com/regiakb/bankai/main/scripts/proxmox-create-bankai-lxc.sh?v=$(date +%s)" -o /tmp/proxmox-create-bankai-lxc.sh && chmod +x /tmp/proxmox-create-bankai-lxc.sh && /tmp/proxmox-create-bankai-lxc.sh
 ```
 
 **From inside an existing LXC** (one-liner as root):
@@ -119,6 +119,7 @@ Full guide: **[docs/DEPLOY_LXC.md](docs/DEPLOY_LXC.md)**. App on port 8000, syst
 ## License
 
 See License.md
+
 
 
 
