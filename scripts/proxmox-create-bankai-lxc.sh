@@ -119,7 +119,7 @@ done
 sleep 2
 
 echo "[*] Installing Bankai inside LXC (may take a few minutes)..."
-pct exec "$VMID" -- sh -c "apt-get update -qq && apt-get install -y -qq git && git clone --depth 1 https://github.com/regiakb/bankai.git /opt/bankai && /opt/bankai/scripts/install-lxc.sh"
+pct exec "$VMID" -- sh -c "apt-get update -qq && apt-get install -y -qq git && git clone --depth 1 https://github.com/regiakb/bankai.git /opt/bankai && chmod +x /opt/bankai/scripts/install-lxc.sh && /opt/bankai/scripts/install-lxc.sh"
 
 CT_IP=$(pct exec "$VMID" -- hostname -I 2>/dev/null | awk '{print $1}')
 echo ""
