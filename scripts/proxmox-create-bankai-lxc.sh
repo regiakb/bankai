@@ -42,12 +42,11 @@ case "$TEMPLATE" in
     # Look up in local:vztmpl (pveam list usually returns just the filename)
     TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
     if [ -z "$TPL_FILE" ]; then
-      # Auto-download a supported template: try Debian 12, then Ubuntu 22/24, then Alpine
+      # Auto-download: pveam available format is "section\ttemplate_name" (e.g. "system  debian-12-standard_12.12-1_amd64.tar.zst")
       echo "[*] No template found. Updating template list..."
       pveam update >/dev/null 2>&1 || true
-      # pveam available may show section name in col1 and template in another column - pick the field that ends with .tar.zst
       for want in "debian-12-standard" "ubuntu-22.04-standard" "ubuntu-24.04-standard" "alpine-3"; do
-        TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep -i "$want" | awk '{for(i=1;i<=NF;i++) if($i ~ /\.tar\.zst$/) {print $i; exit}}' | head -1)
+        TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep "^system" | grep -i "$want" | head -1 | awk '{print $2}')
         if [ -n "$TPL_DOWNLOAD" ]; then
           echo "[*] Downloading $TPL_DOWNLOAD (this may take a few minutes)..."
           if pveam download local "$TPL_DOWNLOAD"; then
