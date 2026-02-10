@@ -89,10 +89,7 @@ python manage.py runserver
 - `templates/` — Templates (admin panel, login, inventory)
 - `static/` — CSS and images
 
-## Publishing to GitHub and Docker Hub
-
-See [DEPLOY.md](DEPLOY.md) for detailed steps: pushing code to GitHub and publishing the image to Docker Hub.
-
 ## License
 
-Add your license here (MIT, GPL, proprietary, etc.).
+See License.md
+
