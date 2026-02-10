@@ -13,9 +13,12 @@
 </div>
 
 ---
-
-> **📌 GitHub repo description** (copy to *About* → *Description*):  
-> *Network inventory panel: Nmap discovery & scans, Proxmox, AdGuard, Telegram alerts. Django + Docker.*
+<div align="center">
+  <img src="https://i.ibb.co/pv6qwSrT/banaki1.png">
+  <img src="https://i.ibb.co/gbV7JmSN/banaki2.png">
+  <img src="https://i.ibb.co/vxqY0h9j/banaki3.png">
+  <img src="https://i.ibb.co/yFfHx91r/banaki4.png">
+</div>
 
 ## Features
 
@@ -99,5 +102,6 @@ password: bankai
 ## License
 
 See License.md
+
 
 
