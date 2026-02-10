@@ -9,6 +9,8 @@ from .api import views as api_views
 # Web views
 urlpatterns = [
     path('settings/', views.settings_index, name='settings_index'),
+    path('settings/db-backup/', views.db_backup, name='db_backup'),
+    path('settings/db-restore/', views.db_restore, name='db_restore'),
     path('setup/', views.setup_wizard, name='setup_wizard'),
     path('integrations/', views.integrations_list, name='integrations_list'),
     path('integrations/add/<str:integration_type>/', views.integration_add, name='integration_add'),

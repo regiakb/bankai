@@ -21,6 +21,11 @@ import subprocess
 import json
 import threading
 import queue
+import os
+import tempfile
+import sqlite3
+from django.conf import settings
+from pathlib import Path
 
 
 def is_setup_completed():
@@ -278,6 +283,96 @@ def settings_index(request):
         context['search'] = search
         context['is_staff_filter'] = is_staff_filter
     return render(request, 'inventory/settings_index.html', context)
+
+
+# --- Database backup / restore (staff only) ---
+# Backup uses SQLite backup API so the app keeps running. Restore saves a "pending"
+# file and is applied on next app restart via entrypoint to avoid replacing DB in-use.
+
+def _get_db_path():
+    """Return the default database path (Path or str)."""
+    return settings.DATABASES['default']['NAME']
+
+def _get_restore_pending_path():
+    """Path where we store an uploaded DB file to be applied on next restart."""
+    db_path = Path(_get_db_path())
+    return db_path.parent / 'db_restore_pending.sqlite3'
+
+
+@login_required
+def db_backup(request):
+    """Download a full copy of the SQLite database (staff only). Uses SQLite backup API for consistency."""
+    if not request.user.is_staff:
+        return redirect('settings_index')
+    db_path = Path(_get_db_path())
+    if not db_path.exists():
+        messages.error(request, 'Database file not found.')
+        return redirect('settings_index')
+    conn = None
+    backup_conn = None
+    tmp_path = None
+    try:
+        conn = sqlite3.connect(str(db_path))
+        suffix = timezone.now().strftime('%Y%m%d_%H%M')
+        filename = f'bankai_backup_{suffix}.sqlite3'
+        fd, tmp_path = tempfile.mkstemp(suffix='.sqlite3')
+        os.close(fd)
+        backup_conn = sqlite3.connect(tmp_path)
+        conn.backup(backup_conn)
+        with open(tmp_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except Exception as e:
+        logger.exception('DB backup failed')
+        messages.error(request, f'Backup failed: {e}')
+        return redirect('settings_index')
+    finally:
+        for c in (backup_conn, conn):
+            if c is not None:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
+@login_required
+def db_restore(request):
+    """Accept an uploaded SQLite backup; save as pending and apply on next app restart (staff only)."""
+    if not request.user.is_staff:
+        return redirect('settings_index')
+    if request.method != 'POST':
+        return redirect('settings_index')
+    upload = request.FILES.get('backup_file')
+    if not upload:
+        messages.error(request, 'No file selected.')
+        return redirect('settings_index')
+    # Basic validation: extension and size (e.g. max 200 MiB)
+    if not upload.name.lower().endswith('.sqlite3'):
+        messages.error(request, 'File must be a .sqlite3 backup.')
+        return redirect('settings_index')
+    max_size = 200 * 1024 * 1024
+    if upload.size > max_size:
+        messages.error(request, 'File too large (max 200 MB).')
+        return redirect('settings_index')
+    pending_path = _get_restore_pending_path()
+    try:
+        with open(pending_path, 'wb') as f:
+            for chunk in upload.chunks():
+                f.write(chunk)
+        messages.success(
+            request,
+            'Backup received. Restart the application to complete the restore (database will be replaced).'
+        )
+    except Exception as e:
+        logger.exception('DB restore save failed')
+        messages.error(request, f'Could not save backup: {e}')
+    return redirect('settings_index')
 
 
 # --- Integrations (multiple instances per type) ---
