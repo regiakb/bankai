@@ -79,10 +79,20 @@ case "$TEMPLATE" in
     ;;
 esac
 
-# --- Check VMID does not already exist ---
-if pct status "$VMID" >/dev/null 2>&1; then
-  echo "Error: container $VMID already exists. Use another VMID: VMID=200 $0"
-  exit 1
+# --- Resolve VMID: use next free if default is taken ---
+if pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; then
+  if [ "${VMID}" = "110" ]; then
+    NEXT=$(pvesh get /cluster/nextid 2>/dev/null) || NEXT=111
+    VMID=$NEXT
+    while pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; do
+      VMID=$((VMID + 1))
+      [ $VMID -gt 999 ] && { echo "Error: no free VMID found (tried up to 999)."; exit 1; }
+    done
+    echo "[*] Default VMID 110 in use, using $VMID instead."
+  else
+    echo "Error: container $VMID already exists. Use another VMID: VMID=200 $0"
+    exit 1
+  fi
 fi
 
 echo "[*] Creating LXC $VMID ($HOSTNAME) with template $TEMPLATE ..."
