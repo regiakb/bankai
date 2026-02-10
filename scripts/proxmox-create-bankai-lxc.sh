@@ -42,27 +42,28 @@ case "$TEMPLATE" in
     # Look up in local:vztmpl (pveam list usually returns just the filename)
     TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
     if [ -z "$TPL_FILE" ]; then
-      # Auto-download Debian 12 template if default and none found
-      if [ "$TEMPLATE" = "debian-12-standard" ]; then
-        echo "[*] No template found. Updating template list and downloading Debian 12..."
-        pveam update >/dev/null 2>&1 || true
-        # Template name must come from 'pveam available' (e.g. debian-12-standard_12.7-1_amd64.tar.zst)
-        TPL_DOWNLOAD=$(pveam available --section system 2>/dev/null | grep -i "debian-12-standard" | head -1 | awk '{print $1}')
+      # Auto-download a supported template: try Debian 12, then Ubuntu 22/24, then Alpine
+      echo "[*] No template found. Updating template list..."
+      pveam update >/dev/null 2>&1 || true
+      # Get lines that look like template filenames (name.tar.zst), not section headers
+      for want in "debian-12-standard" "ubuntu-22.04-standard" "ubuntu-24.04-standard" "alpine-3"; do
+        TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep "\.tar\.zst" | grep -i "$want" | head -1 | awk '{print $1}')
         if [ -n "$TPL_DOWNLOAD" ]; then
           echo "[*] Downloading $TPL_DOWNLOAD (this may take a few minutes)..."
           if pveam download local "$TPL_DOWNLOAD"; then
             TPL_FILE="$TPL_DOWNLOAD"
+            break
           fi
         fi
-      fi
+      done
     fi
     if [ -z "$TPL_FILE" ]; then
-      echo "Error: no template found matching '$TEMPLATE'."
+      echo "Error: no template found matching '$TEMPLATE' and no alternate could be downloaded."
       echo "Available on node:"
       pveam list local:vztmpl 2>/dev/null || true
       echo ""
-      echo "Download manually: pveam update && pveam available --section system"
-      echo "  Then: pveam download local <template_name_from_list>"
+      echo "Run: pveam available"
+      echo "Then: pveam download local <exact_template_name_from_list>"
       exit 1
     fi
     TEMPLATE="local:vztmpl/${TPL_FILE}"
