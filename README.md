@@ -99,14 +99,15 @@ curl -sSL https://raw.githubusercontent.com/regiakb/bankai/main/scripts/proxmox-
 apt update && apt install -y git && git clone https://github.com/regiakb/bankai.git /opt/bankai && /opt/bankai/scripts/install-lxc.sh
 ```
 
-Full guide: **[docs/DEPLOY_LXC.md](docs/DEPLOY_LXC.md)**. App on port 8000, systemd service `bankai`.
+Full guide: **[docs/DEPLOY_LXC.md](docs/DEPLOY_LXC.md)**. App on port 8000, systemd service `bankai`.  
+**LXC login:** root / bankai. **Bankai web:** admin / bankai.
 
 ## Default credentials
 
-```bash
-user: admin
-password: bankai
-```
+| Where        | User  | Password |
+|-------------|-------|----------|
+| Bankai web  | admin | bankai   |
+| LXC (Proxmox script) | root  | bankai   |
 
 ## Project structure
 

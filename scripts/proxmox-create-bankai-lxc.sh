@@ -2,14 +2,11 @@
 #
 # Run on the Proxmox NODE (as root).
 # Creates an LXC, starts it, and installs Bankai inside.
+# LXC login: root / bankai (override with ROOT_PASSWORD=other)
 #
 # Usage:
 #   ./proxmox-create-bankai-lxc.sh
 #   VMID=200 ./proxmox-create-bankai-lxc.sh
-#
-# Requirements on the node:
-#   - LXC template (e.g. Debian 12 or Ubuntu 22.04)
-#   - Download template if missing: pveam download node local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst
 #
 
 set -e
@@ -21,7 +18,8 @@ ROOTFS_SIZE="${ROOTFS_SIZE:-8}"
 MEMORY="${MEMORY:-512}"
 HOSTNAME="${HOSTNAME:-bankai}"
 BRIDGE="${BRIDGE:-vmbr0}"
-# Template: short name (searched in local:vztmpl/...) or full path
+# Root password for the LXC (default: bankai). Override with ROOT_PASSWORD=otherpass
+ROOT_PASSWORD="${ROOT_PASSWORD:-bankai}"
 TEMPLATE="${TEMPLATE:-debian-12-standard}"
 
 # --- Check we are on Proxmox ---
@@ -39,12 +37,10 @@ fi
 case "$TEMPLATE" in
   */*|*:*) ;;
   *)
-    # Look up in local:vztmpl (pveam list usually returns just the filename)
     TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
     if [ -z "$TPL_FILE" ]; then
       echo "[*] No template found. Updating template list..."
       pveam update >/dev/null 2>&1 || true
-      # Parse pveam available: each line is "section  template_name" - get the filename (field ending in .tar.zst/.tar.gz/.tar.xz)
       for want in "debian-12-standard" "ubuntu-22.04-standard" "ubuntu-24.04-standard"; do
         TPL_DOWNLOAD=$(pveam available 2>/dev/null | grep "system" | grep -i "$want" | head -1 | awk '{for(i=1;i<=NF;i++) if($i ~ /\.(tar\.zst|tar\.gz|tar\.xz)$/) {print $i; exit}}')
         if [ -n "$TPL_DOWNLOAD" ]; then
@@ -55,7 +51,6 @@ case "$TEMPLATE" in
           fi
         fi
       done
-      # Fallback: use exact template name from Proxmox list (debian-12-standard_12.12-1_amd64.tar.zst)
       if [ -z "$TPL_FILE" ]; then
         for exact in "debian-12-standard_12.12-1_amd64.tar.zst" "ubuntu-22.04-standard_22.04-1_amd64.tar.zst" "ubuntu-24.04-standard_24.04-2_amd64.tar.zst"; do
           echo "[*] Downloading $exact (this may take a few minutes)..."
@@ -67,12 +62,7 @@ case "$TEMPLATE" in
       fi
     fi
     if [ -z "$TPL_FILE" ]; then
-      echo "Error: no template found matching '$TEMPLATE' and no alternate could be downloaded."
-      echo "Available on node:"
-      pveam list local:vztmpl 2>/dev/null || true
-      echo ""
-      echo "Run: pveam available"
-      echo "Then: pveam download local <exact_template_name_from_list>"
+      echo "Error: no template found. Run: pveam available"
       exit 1
     fi
     TEMPLATE="local:vztmpl/${TPL_FILE}"
@@ -86,11 +76,11 @@ if pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/d
     VMID=$NEXT
     while pct status "$VMID" >/dev/null 2>&1 || [ -f "/etc/pve/lxc/${VMID}.conf" ] 2>/dev/null || [ -f "/etc/pve/qemu-server/${VMID}.conf" ] 2>/dev/null; do
       VMID=$((VMID + 1))
-      [ $VMID -gt 999 ] && { echo "Error: no free VMID found (tried up to 999)."; exit 1; }
+      [ $VMID -gt 999 ] && { echo "Error: no free VMID found."; exit 1; }
     done
     echo "[*] Default VMID 110 in use, using $VMID instead."
   else
-    echo "Error: container $VMID already exists. Use another VMID: VMID=200 $0"
+    echo "Error: container $VMID already exists. Use another VMID."
     exit 1
   fi
 fi
@@ -102,7 +92,8 @@ pct create "$VMID" "$TEMPLATE" \
   --cores 1 \
   --rootfs "$STORAGE:${ROOTFS_SIZE}" \
   --net0 "name=eth0,bridge=$BRIDGE,ip=dhcp" \
-  --unprivileged 0
+  --unprivileged 0 \
+  --password "$ROOT_PASSWORD"
 
 echo "[*] Starting container $VMID ..."
 pct start "$VMID"
@@ -126,10 +117,8 @@ echo ""
 echo "=============================================="
 echo "  Bankai installed in LXC $VMID ($HOSTNAME)"
 echo "=============================================="
-echo "  IP (approx):  $CT_IP"
-echo "  URL:          http://${CT_IP}:8000"
-echo "  User:         admin"
-echo "  Password:     bankai"
+echo "  LXC login:  root / $ROOT_PASSWORD  (ssh root@$CT_IP or pct enter $VMID)"
+echo "  Bankai URL: http://${CT_IP}:8000   (user: admin / bankai)"
 echo ""
 echo "  Useful commands:"
 echo "    pct enter $VMID   - enter container"

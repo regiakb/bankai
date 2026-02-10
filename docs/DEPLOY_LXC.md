@@ -20,10 +20,11 @@ git clone https://github.com/regiakb/bankai.git /tmp/bankai
 /tmp/bankai/scripts/proxmox-create-bankai-lxc.sh
 ```
 
-Optional environment variables before running: `VMID`, `STORAGE`, `TEMPLATE`, `HOSTNAME`, `MEMORY`, `BRIDGE`. Example: `VMID=200 STORAGE=local-lvm ./proxmox-create-bankai-lxc.sh`.
+**Credentials after creation:** LXC shell **root** / **bankai** (SSH or `pct enter <vmid>`). Bankai web at `http://<LXC-IP>:8000` with **admin** / **bankai**.
 
-You need an LXC template (e.g. Debian 12). If you don’t have one:  
-`pveam download node local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst`
+Optional environment variables: `VMID`, `STORAGE`, `TEMPLATE`, `HOSTNAME`, `MEMORY`, `BRIDGE`, `ROOT_PASSWORD` (default: bankai). Example: `VMID=200 ROOT_PASSWORD=mypass ./proxmox-create-bankai-lxc.sh`.
+
+The script downloads an LXC template if needed (Debian 12 or Ubuntu).
 
 ## 1. Create the LXC manually
 
@@ -78,8 +79,9 @@ The app listens on port **8000**. Default user: **admin** / **bankai**.
 
 ## 5. Access
 
-- From the host: `http://<LXC-IP>:8000`
-- On Proxmox, assign an IP to the CT and ensure port 8000 is reachable (or use a reverse proxy on another CT if you prefer).
+- **LXC shell:** user **root**, password **bankai** (or the one set with `ROOT_PASSWORD`). Use `ssh root@<LXC-IP>` or from the node `pct enter <vmid>`.
+- **Bankai web:** `http://<LXC-IP>:8000` — user **admin**, password **bankai**.
+- On Proxmox, ensure port 8000 is reachable (or use a reverse proxy if you prefer).
 
 ## 6. Persistence
 
