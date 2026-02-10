@@ -42,11 +42,21 @@ case "$TEMPLATE" in
     # Look up in local:vztmpl (pveam list usually returns just the filename)
     TPL_FILE=$(pveam list local:vztmpl 2>/dev/null | grep -i "$TEMPLATE" | head -1 | awk '{print $1}')
     if [ -z "$TPL_FILE" ]; then
+      # Auto-download Debian 12 template if default and none found
+      if [ "$TEMPLATE" = "debian-12-standard" ]; then
+        echo "[*] No template found. Downloading Debian 12 template (this may take a few minutes)..."
+        if pveam download local debian-12-standard_12.2-1_amd64.tar.zst 2>/dev/null; then
+          TPL_FILE="debian-12-standard_12.2-1_amd64.tar.zst"
+        fi
+      fi
+    fi
+    if [ -z "$TPL_FILE" ]; then
       echo "Error: no template found matching '$TEMPLATE'."
       echo "Available templates:"
       pveam list local:vztmpl 2>/dev/null || true
       echo ""
-      echo "Download Debian 12: pveam download node local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst"
+      echo "Download Debian 12 manually: pveam download local debian-12-standard_12.2-1_amd64.tar.zst"
+      echo "Or list available: pveam available"
       exit 1
     fi
     TEMPLATE="local:vztmpl/${TPL_FILE}"
